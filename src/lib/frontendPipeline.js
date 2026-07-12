@@ -15,6 +15,7 @@ const YT_BASE = 'https://www.googleapis.com/youtube/v3';
 const SEARCH_QUERIES = [
   'شرح برمجة أولى ثانوي 2026',
   'برمجة وذكاء اصطناعي أولى ثانوي',
+  'مراجعة برمجة أولى ثانوي',
   'منهج البرمجة الصف الأول الثانوي',
   'QUREO أولى ثانوي',
   'مستر السقا برمجة أولى ثانوي',
@@ -484,35 +485,99 @@ function parseISO8601Duration(duration) {
   return hours * 3600 + minutes * 60 + seconds;
 }
 
+// Fetch channel videos via RSS to bypass YouTube API Key quota usage
+export async function fetchChannelVideosViaRSS(channelId) {
+  try {
+    const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rssUrl)}`;
+    
+    const response = await fetch(proxyUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch RSS feed: ${response.status}`);
+    }
+    
+    const xmlText = await response.text();
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+    
+    const entries = xmlDoc.getElementsByTagName('entry');
+    const videos = [];
+    
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      const videoId = entry.getElementsByTagName('yt:videoId')[0]?.textContent || 
+                      entry.getElementsByTagName('videoId')[0]?.textContent;
+      const title = entry.getElementsByTagName('title')[0]?.textContent || '';
+      const description = entry.getElementsByTagName('media:description')[0]?.textContent || 
+                          entry.getElementsByTagName('description')[0]?.textContent || '';
+      const published = entry.getElementsByTagName('published')[0]?.textContent || new Date().toISOString();
+      const authorName = entry.getElementsByTagName('author')[0]?.getElementsByTagName('name')[0]?.textContent || '';
+      
+      if (videoId) {
+        videos.push({
+          videoId,
+          title,
+          description,
+          publishedAt: published,
+          channelId,
+          channelTitle: authorName,
+          thumbnail_url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+        });
+      }
+    }
+    
+    return videos;
+  } catch (err) {
+    console.warn(`[RSS Scraper] Failed to fetch via RSS for channel ${channelId}. Falling back to standard YouTube Search API...`, err);
+    return null;
+  }
+}
+
 // On-demand scraper and AI analyzer pipeline for a specific competitor
 export async function runChannelAnalysisPipeline(competitorId, channelId, onProgress = () => {}) {
   const startTime = Date.now();
-  onProgress({ status: 'fetching', message: '📡 جاري جلب أحدث وأشهر فيديوهات المدرس...' });
+  onProgress({ status: 'fetching', message: '📡 جاري فحص تغذية RSS للقناة لتوفير الكوتا...' });
 
   try {
-    // 1. Fetch latest 12 videos
-    const latestRes = await ytFetch('search', {
-      channelId,
-      part: 'snippet',
-      order: 'date',
-      maxResults: 12,
-      type: 'video'
-    });
+    let videoMap = new Map();
+    
+    // Try to fetch via RSS first (costs 0 quota!)
+    const rssVideos = await fetchChannelVideosViaRSS(channelId);
+    
+    if (rssVideos && rssVideos.length > 0) {
+      onProgress({ status: 'fetching', message: `📡 تم العثور على ${rssVideos.length} فيديو عبر RSS (0 كوتا مستهلكة!)` });
+      for (const item of rssVideos) {
+        videoMap.set(item.videoId, {
+          title: item.title,
+          description: item.description,
+          publishedAt: item.publishedAt,
+          thumbnails: { high: { url: item.thumbnail_url } },
+          channelTitle: item.channelTitle
+        });
+      }
+    } else {
+      // Fallback to standard YouTube API search
+      onProgress({ status: 'fetching', message: '📡 جاري جلب أحدث وأشهر فيديوهات المدرس عبر YouTube API...' });
+      const latestRes = await ytFetch('search', {
+        channelId,
+        part: 'snippet',
+        order: 'date',
+        maxResults: 12,
+        type: 'video'
+      });
 
-    // 2. Fetch top 12 viewed videos
-    const popularRes = await ytFetch('search', {
-      channelId,
-      part: 'snippet',
-      order: 'viewCount',
-      maxResults: 12,
-      type: 'video'
-    });
+      const popularRes = await ytFetch('search', {
+        channelId,
+        part: 'snippet',
+        order: 'viewCount',
+        maxResults: 12,
+        type: 'video'
+      });
 
-    // Merge videos to avoid duplicates
-    const videoMap = new Map();
-    for (const item of [...(latestRes.items || []), ...(popularRes.items || [])]) {
-      if (item.id?.videoId) {
-        videoMap.set(item.id.videoId, item.snippet);
+      for (const item of [...(latestRes.items || []), ...(popularRes.items || [])]) {
+        if (item.id?.videoId) {
+          videoMap.set(item.id.videoId, item.snippet);
+        }
       }
     }
 

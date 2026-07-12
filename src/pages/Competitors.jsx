@@ -11,11 +11,17 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Cell
+  Cell,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  Legend
 } from 'recharts';
 import { useSupabaseData } from '../hooks/useSupabase';
 import { supabase } from '../lib/supabase';
-import { isGeminiConfigured, analyzeCompetitorInsights } from '../lib/gemini';
+import { isGeminiConfigured, analyzeCompetitorInsights, generateCombatLessonPlan, generateShortVideoScript } from '../lib/gemini';
 import { runChannelAnalysisPipeline } from '../lib/frontendPipeline';
 import {
   realCompetitors as localCompetitors,
@@ -61,7 +67,7 @@ export function parseCompetitor(competitor) {
   };
 }
 
-function CompetitorCard({ competitor: rawCompetitor, videos, insights, isExpanded, onToggle, rankIndex, onRefresh }) {
+function CompetitorCard({ competitor: rawCompetitor, videos, insights, isExpanded, onToggle, rankIndex, onRefresh, onGenerateLessonPlan, onGenerateShortScript }) {
   const competitor = parseCompetitor(rawCompetitor);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
@@ -244,36 +250,46 @@ function CompetitorCard({ competitor: rawCompetitor, videos, insights, isExpande
             )}
 
             {competitor.strengths || competitor.weaknesses ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Strengths */}
-                <div>
-                  <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-2 flex items-center gap-1.5">
-                    <CheckCircle2 size={13} /> نقاط القوة في الشرح
-                  </h4>
-                  <div className="space-y-1.5">
-                    {(competitor.strengths || []).map((s, i) => (
-                      <p key={i} className="text-xs text-text-secondary-light dark:text-text-secondary-dark flex items-start gap-1.5">
-                        <span className="text-emerald-500 font-bold">✓</span>
-                        <span>{s}</span>
-                      </p>
-                    ))}
+              <div className="space-y-4 w-full">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Strengths */}
+                  <div>
+                    <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-2 flex items-center gap-1.5">
+                      <CheckCircle2 size={13} /> نقاط القوة في الشرح
+                    </h4>
+                    <div className="space-y-1.5">
+                      {(competitor.strengths || []).map((s, i) => (
+                        <p key={i} className="text-xs text-text-secondary-light dark:text-text-secondary-dark flex items-start gap-1.5">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span>{s}</span>
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Weaknesses */}
+                  <div className="border-t md:border-t-0 md:pr-4 md:border-r border-outline-variant/30">
+                    <h4 className="text-xs font-bold text-red-500 dark:text-red-400 mb-2 flex items-center gap-1.5">
+                      <AlertTriangle size={13} /> نقاط الضعف والفجوات
+                    </h4>
+                    <div className="space-y-1.5">
+                      {(competitor.weaknesses || []).map((w, i) => (
+                        <p key={i} className="text-xs text-text-secondary-light dark:text-text-secondary-dark flex items-start gap-1.5">
+                          <span className="text-red-500 font-bold">✗</span>
+                          <span>{w}</span>
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                
-                {/* Weaknesses */}
-                <div className="border-t md:border-t-0 md:pr-4 md:border-r border-outline-variant/30">
-                  <h4 className="text-xs font-bold text-red-500 dark:text-red-400 mb-2 flex items-center gap-1.5">
-                    <AlertTriangle size={13} /> نقاط الضعف والفجوات
-                  </h4>
-                  <div className="space-y-1.5">
-                    {(competitor.weaknesses || []).map((w, i) => (
-                      <p key={i} className="text-xs text-text-secondary-light dark:text-text-secondary-dark flex items-start gap-1.5">
-                        <span className="text-red-500 font-bold">✗</span>
-                        <span>{w}</span>
-                      </p>
-                    ))}
-                  </div>
-                </div>
+
+                <button
+                  onClick={() => onGenerateLessonPlan(competitor.name, competitor.weaknesses || [])}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-secondary text-white text-xs font-bold rounded-xl shadow-sm hover:bg-secondary/90 transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  <Sparkles size={14} />
+                  <span>توليد كورس مضاد بالـ AI لمنافسة نقاط ضعفه</span>
+                </button>
               </div>
             ) : (
               <div className="text-center py-6">
@@ -325,31 +341,51 @@ function CompetitorCard({ competitor: rawCompetitor, videos, insights, isExpande
                   return (
                     <div
                       key={video.id}
-                      className="flex items-center justify-between gap-3 p-3 rounded-xl bg-surface-container border border-border-light/20 dark:border-border-dark/10 hover:border-primary/20 transition-all duration-200"
+                      className="flex flex-col gap-2 p-3 rounded-xl bg-surface-container border border-border-light/20 dark:border-border-dark/10 hover:border-primary/20 transition-all duration-200"
                     >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-on-surface truncate">{video.title}</p>
-                        <div className="flex items-center gap-3 mt-1.5 text-[10px] text-text-secondary-light/60 dark:text-text-secondary-dark/60 font-mono">
-                          <span><Eye size={10} className="inline mr-0.5" /> {(parseInt(video.views || 0)).toLocaleString('ar-EG')}</span>
-                          <span><ThumbsUp size={10} className="inline mr-0.5" /> {(parseInt(video.likes || 0)).toLocaleString('ar-EG')}</span>
-                          <span><MessageSquare size={10} className="inline mr-0.5" /> {video.comments_count || 0}</span>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-on-surface truncate">{video.title}</p>
+                          <div className="flex items-center gap-3 mt-1 text-[10px] text-text-secondary-light/60 dark:text-text-secondary-dark/60 font-mono">
+                            <span><Eye size={10} className="inline mr-0.5" /> {(parseInt(video.views || 0)).toLocaleString('ar-EG')}</span>
+                            <span><ThumbsUp size={10} className="inline mr-0.5" /> {(parseInt(video.likes || 0)).toLocaleString('ar-EG')}</span>
+                            <span><MessageSquare size={10} className="inline mr-0.5" /> {video.comments_count || 0}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {insight && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15">
+                              {insight.engagement_score || 5}/10 تفاعل
+                            </span>
+                          )}
+                          <a
+                            href={video.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 text-primary hover:bg-surface-container-low rounded-lg transition-colors"
+                          >
+                            <ExternalLink size={12} />
+                          </a>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {insight && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15">
-                            {insight.engagement_score || 5}/10 تفاعل
-                          </span>
-                        )}
-                        <a
-                          href={video.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1 text-primary hover:bg-surface-container-low rounded-lg transition-colors"
-                        >
-                          <ExternalLink size={12} />
-                        </a>
-                      </div>
+
+                      {insight && ((insight.pain_points && insight.pain_points.length > 0) || (insight.student_requests && insight.student_requests.length > 0)) && (
+                        <div className="mt-1 border-t border-outline-variant/10 pt-1.5">
+                          <div className="flex flex-wrap gap-1.5">
+                            {[...(insight.pain_points || []), ...(insight.student_requests || [])].slice(0, 3).map((pt, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => onGenerateShortScript(pt)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-primary/5 text-primary dark:text-primary-light border border-primary/10 hover:bg-primary/10 transition-colors text-[9px] font-semibold cursor-pointer"
+                                title="اضغط لتوليد سيناريو شرح فيديو قصير"
+                              >
+                                <Sparkles size={8} />
+                                <span>{pt}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -368,10 +404,73 @@ export default function Competitors() {
   const [gradeFilter, setGradeFilter] = useState('all'); // 'all' | 'first' | 'second'
   const [sortBy, setSortBy] = useState('subscribers'); // 'subscribers' | 'videos'
 
+  // H2H Comparison State
+  const [compAId, setCompAId] = useState('');
+  const [compBId, setCompBId] = useState('');
+  const [showH2H, setShowH2H] = useState(false);
+
+  // AI Modal States
+  const [activeLessonPlan, setActiveLessonPlan] = useState(null);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const [activeTabPlan, setActiveTabPlan] = useState('outline'); // 'outline' | 'code' | 'quiz'
+
+  const [activeScript, setActiveScript] = useState(null);
+  const [isGeneratingScript, setIsGeneratingScript] = useState(false);
+
   // Load Competitors, Videos, and Insights dynamically from Supabase with local fallbacks
   const { data: competitors, refetch: refetchCompetitors } = useSupabaseData('competitors', { orderBy: { column: 'subscriber_count', ascending: false } }, localCompetitors);
   const { data: videos } = useSupabaseData('videos', {}, localVideos);
   const { data: insights } = useSupabaseData('ai_insights', {}, localInsights);
+
+  const handleGenerateLessonPlan = async (competitorName, weaknesses) => {
+    setIsGeneratingPlan(true);
+    setActiveLessonPlan(null);
+    try {
+      const plan = await generateCombatLessonPlan(competitorName, weaknesses);
+      if (plan) {
+        let parsed = plan;
+        if (typeof plan === 'string') {
+          try {
+            const clean = plan.replace(/```(?:json)?\n?/g, '').replace(/```\n?/g, '').trim();
+            parsed = JSON.parse(clean);
+          } catch (e) {
+            console.error('Failed to parse lesson plan JSON:', e);
+          }
+        }
+        setActiveLessonPlan(parsed);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء توليد خطة الدرس بالـ AI.');
+    } finally {
+      setIsGeneratingPlan(false);
+    }
+  };
+
+  const handleGenerateShortScript = async (painPoint) => {
+    setIsGeneratingScript(true);
+    setActiveScript(null);
+    try {
+      const script = await generateShortVideoScript(painPoint, 'مستر أحمد (AM Platform)');
+      if (script) {
+        let parsed = script;
+        if (typeof script === 'string') {
+          try {
+            const clean = script.replace(/```(?:json)?\n?/g, '').replace(/```\n?/g, '').trim();
+            parsed = JSON.parse(clean);
+          } catch (e) {
+            console.error('Failed to parse script JSON:', e);
+          }
+        }
+        setActiveScript(parsed);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء توليد سيناريو الفيديو بالـ AI.');
+    } finally {
+      setIsGeneratingScript(false);
+    }
+  };
 
   // Math Calculations for Bento Stats
   const totalSubscribers = competitors.reduce((sum, c) => sum + parseInt(c.subscriber_count || 0), 0);
@@ -412,6 +511,67 @@ export default function Competitors() {
       subscribers: parseInt(c.subscriber_count || 0),
     }))
     .slice(0, 5);
+
+  // Calculate H2H Radar data
+  const compA = competitors.find(c => c.id === compAId);
+  const compB = competitors.find(c => c.id === compBId);
+  
+  let radarData = [];
+  let sA = {}, sB = {};
+  if (compA && compB) {
+    const parseC = (c) => {
+      let strengths = c.strengths || [];
+      let weaknesses = c.weaknesses || [];
+      if (c.description && c.description.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(c.description);
+          strengths = parsed.strengths || [];
+          weaknesses = parsed.weaknesses || [];
+        } catch (e) {}
+      }
+      return { id: c.id, channel_id: c.channel_id, name: c.name, subscribers: c.subscriber_count, views: c.views || 0, strengths, weaknesses };
+    };
+    
+    const cA = parseC(compA);
+    const cB = parseC(compB);
+    
+    const calculateScores = (c) => {
+      const subs = parseInt(c.subscribers || 0);
+      const subsScore = Math.min(100, Math.max(30, Math.round(Math.log10(subs || 1) * 15)));
+      const vids = videos.filter(v => v.competitor_id === c.id);
+      const views = vids.reduce((sum, v) => sum + parseInt(v.views || 0), 0);
+      const engagementScore = Math.min(100, Math.max(40, Math.round(Math.log10(views || 1) * 13)));
+      
+      const coveredCount = curriculumTopics.firstYear.filter(t => 
+        t.covered_by.includes(c.id) || t.covered_by.includes(c.channel_id) || t.covered_by.some(cb => c.name.includes(cb))
+      ).length;
+      const coverageScore = Math.min(100, 30 + coveredCount * 15);
+      
+      const practicalCount = c.strengths.filter(s => 
+        s.includes('عملي') || s.includes('كود') || s.includes('برمج') || s.includes('تطبيق')
+      ).length;
+      const practicalScore = Math.min(100, 40 + practicalCount * 20);
+      
+      const weaknessesCount = c.weaknesses.length;
+      const sentimentScore = Math.max(30, 95 - weaknessesCount * 12);
+      
+      return { subsScore, engagementScore, coverageScore, practicalScore, sentimentScore };
+    };
+    
+    sA = calculateScores(cA);
+    sB = calculateScores(cB);
+    
+    const cleanNameA = cA.name.includes(' - ') ? cA.name.split(' - ')[1] : cA.name;
+    const cleanNameB = cB.name.includes(' - ') ? cB.name.split(' - ')[1] : cB.name;
+    
+    radarData = [
+      { subject: 'المتابعون والقناة', [cleanNameA]: sA.subsScore, [cleanNameB]: sB.subsScore },
+      { subject: 'المشاهدات والتفاعل', [cleanNameA]: sA.engagementScore, [cleanNameB]: sB.engagementScore },
+      { subject: 'تغطية المنهج الدراسي', [cleanNameA]: sA.coverageScore, [cleanNameB]: sB.coverageScore },
+      { subject: 'التركيز العملي البرمجي', [cleanNameA]: sA.practicalScore, [cleanNameB]: sB.practicalScore },
+      { subject: 'رضا وسعادة الطلاب', [cleanNameA]: sA.sentimentScore, [cleanNameB]: sB.sentimentScore },
+    ];
+  }
 
   return (
     <div className="space-y-6 w-full animate-fade-in">
@@ -477,6 +637,103 @@ export default function Competitors() {
         </div>
       </div>
 
+      {/* 🥊 Head-to-Head Comparison Widget */}
+      <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-5 shadow-sm">
+        <button
+          onClick={() => setShowH2H(!showH2H)}
+          className="flex items-center justify-between w-full font-headline text-sm font-bold text-on-surface hover:text-primary transition-colors cursor-pointer"
+        >
+          <span className="flex items-center gap-2">
+            <span>🥊 مقارنة المدرسين رأس برأس (H2H Radar)</span>
+            <span className="text-[10px] bg-secondary/10 text-secondary border border-secondary/15 px-2 py-0.5 rounded-lg">جديد</span>
+          </span>
+          <ChevronDown className={`transform transition-transform duration-300 ${showH2H ? 'rotate-180' : ''}`} size={16} />
+        </button>
+
+        {showH2H && (
+          <div className="mt-5 space-y-5 animate-fade-in border-t border-outline-variant/20 pt-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Select Competitor A */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-on-surface-variant">المدرس الأول (A)</label>
+                <select
+                  value={compAId}
+                  onChange={(e) => setCompAId(e.target.value)}
+                  className="px-3.5 py-2.5 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="">-- اختر المدرس الأول --</option>
+                  {competitors.map(c => (
+                    <option key={c.id} value={c.id} disabled={c.id === compBId}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Select Competitor B */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-on-surface-variant">المدرس الثاني (B)</label>
+                <select
+                  value={compBId}
+                  onChange={(e) => setCompBId(e.target.value)}
+                  className="px-3.5 py-2.5 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="">-- اختر المدرس الثاني --</option>
+                  {competitors.map(c => (
+                    <option key={c.id} value={c.id} disabled={c.id === compAId}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {compA && compB ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center border-t border-outline-variant/20 pt-5">
+                {/* Radar Chart */}
+                <div className="h-64 w-full flex items-center justify-center bg-surface-container/30 rounded-2xl p-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                      <PolarGrid stroke="var(--color-outline-variant)" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: 'currentColor', fontSize: 9 }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: 'currentColor', fontSize: 8 }} />
+                      <Radar name={compA.name.includes(' - ') ? compA.name.split(' - ')[1] : compA.name} dataKey={compA.name.includes(' - ') ? compA.name.split(' - ')[1] : compA.name} stroke="var(--color-primary)" fill="var(--color-primary)" fillOpacity={0.2} />
+                      <Radar name={compB.name.includes(' - ') ? compB.name.split(' - ')[1] : compB.name} dataKey={compB.name.includes(' - ') ? compB.name.split(' - ')[1] : compB.name} stroke="var(--color-secondary)" fill="var(--color-secondary)" fillOpacity={0.2} />
+                      <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(30, 45, 74, 0.95)', border: 'none', borderRadius: '8px', fontSize: '10px', color: '#fff' }} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* H2H Brief Analysis Card */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-on-surface flex items-center gap-1.5">
+                    <Sparkles size={14} className="text-primary" />
+                    تحليل المقارنة بالـ AI:
+                  </h4>
+                  <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 space-y-3">
+                    <p className="text-xs text-on-surface-variant leading-relaxed">
+                      بالمقارنة بين <strong>{compA.name}</strong> و <strong>{compB.name}</strong>:
+                    </p>
+                    <ul className="text-xs text-on-surface-variant space-y-1.5 list-disc list-inside">
+                      <li>
+                        المدرس الأكبر انتشاراً هو <strong>{parseInt(compA.subscriber_count) > parseInt(compB.subscriber_count) ? compA.name : compB.name}</strong> بعدد مشتركين يصل لـ <strong>{formatBigNumber(Math.max(parseInt(compA.subscriber_count), parseInt(compB.subscriber_count)))}</strong>.
+                      </li>
+                      <li>
+                        المدرس الأكثر تفاعلاً بمشاهدات المحاضرات هو <strong>{sA.engagementScore > sB.engagementScore ? compA.name : compB.name}</strong>.
+                      </li>
+                      <li>
+                        <strong>ميزة التغطية:</strong> يغطي <strong>{compA.name}</strong> مواضيع بمعدل <strong>{sA.coverageScore}%</strong> مقابل <strong>{sB.coverageScore}%</strong> للمنافس الثاني.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-6 text-xs text-on-surface-variant/55 bg-surface-container/20 rounded-2xl border border-dashed border-outline-variant/30">
+                الرجاء اختيار مدرسين للمقارنة وعرض المخطط الراداري التفاعلي.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Advanced Filters & Search Controls */}
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark p-3 rounded-2xl card-shadow">
         {/* Search Input & Sort Button */}
@@ -539,6 +796,8 @@ export default function Competitors() {
                 isExpanded={expandedId === comp.id}
                 onToggle={() => setExpandedId(expandedId === comp.id ? null : comp.id)}
                 onRefresh={refetchCompetitors}
+                onGenerateLessonPlan={handleGenerateLessonPlan}
+                onGenerateShortScript={handleGenerateShortScript}
               />
             );
           })
@@ -594,6 +853,263 @@ export default function Competitors() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* 🧠 Fullscreen AI Loading Overlay - Lesson Plan */}
+      {isGeneratingPlan && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-md flex flex-col items-center justify-center gap-4 z-50 animate-fade-in">
+          <div className="w-16 h-16 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+          <p className="text-sm font-bold text-on-background animate-pulse">🧠 جاري تشغيل خبير الذكاء الاصطناعي لتوليد خطة الدرس والمادة البرمجية المضادة...</p>
+        </div>
+      )}
+
+      {/* 🎬 Fullscreen AI Loading Overlay - Short Video Script */}
+      {isGeneratingScript && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-md flex flex-col items-center justify-center gap-4 z-50 animate-fade-in">
+          <div className="w-16 h-16 rounded-full border-4 border-secondary border-t-transparent animate-spin"></div>
+          <p className="text-sm font-bold text-on-background animate-pulse">🎬 جاري استخلاص تعليقات المدرس وتوليد سيناريو فيديو قصير (Short/Reel)...</p>
+        </div>
+      )}
+
+      {/* 🧠 AI Lesson Plan Modal */}
+      {activeLessonPlan && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-40 animate-fade-in">
+          <div className="bg-surface-container-lowest dark:bg-surface-container-lowest rounded-3xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border border-outline-variant/30 text-on-surface">
+            {/* Header */}
+            <div className="p-6 border-b border-outline-variant/30 flex justify-between items-center bg-primary/5">
+              <div>
+                <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg mb-1 inline-block">خطة الدرس المضادة بالـ AI</span>
+                <h3 className="font-headline text-base font-bold">{activeLessonPlan.lesson_title || 'خطة الدرس المقترحة'}</h3>
+              </div>
+              <button 
+                onClick={() => setActiveLessonPlan(null)}
+                className="p-1.5 hover:bg-outline-variant/20 rounded-full transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="flex border-b border-outline-variant/20 bg-surface-container/30">
+              <button
+                onClick={() => setActiveTabPlan('outline')}
+                className={`flex-1 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer ${activeTabPlan === 'outline' ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-on-surface-variant'}`}
+              >
+                📖 محتوى الشرح
+              </button>
+              <button
+                onClick={() => setActiveTabPlan('code')}
+                className={`flex-1 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer ${activeTabPlan === 'code' ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-on-surface-variant'}`}
+              >
+                💻 كود وتطبيق Python
+              </button>
+              <button
+                onClick={() => setActiveTabPlan('quiz')}
+                className={`flex-1 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer ${activeTabPlan === 'quiz' ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-on-surface-variant'}`}
+              >
+                📝 اختبار التقييم
+              </button>
+            </div>
+
+            {/* Content Drawer */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {activeTabPlan === 'outline' && (
+                <div className="space-y-6">
+                  {/* Objectives */}
+                  <div>
+                    <h4 className="text-xs font-bold text-primary mb-2">🎯 الأهداف التعليمية للدرس:</h4>
+                    <ul className="list-disc list-inside text-xs text-on-surface-variant space-y-1.5">
+                      {(activeLessonPlan.objectives || []).map((obj, i) => (
+                        <li key={i}>{obj}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Strategy */}
+                  <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl">
+                    <h4 className="text-xs font-bold text-primary mb-1">🛡️ استراتيجية التميز (التغلب على المنافس):</h4>
+                    <p className="text-xs text-on-surface-variant leading-relaxed">
+                      {activeLessonPlan.explanation_strategy}
+                    </p>
+                  </div>
+
+                  {/* Outline Section */}
+                  <div>
+                    <h4 className="text-xs font-bold text-primary mb-3">📋 تقسيم ومراحل الدرس:</h4>
+                    <div className="space-y-3">
+                      {(activeLessonPlan.outline || []).map((sec, i) => (
+                        <div key={i} className="p-3.5 rounded-xl bg-surface-container border border-outline-variant/10">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs font-bold text-on-surface">{sec.section_title}</span>
+                            <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-md font-mono">{sec.duration}</span>
+                          </div>
+                          <p className="text-xs text-on-surface-variant">{sec.concept}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTabPlan === 'code' && activeLessonPlan.python_exercise && (
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-xs font-bold text-primary mb-1">🔥 عنوان التطبيق العملي:</h4>
+                    <p className="text-xs text-on-surface font-semibold">{activeLessonPlan.python_exercise.title}</p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-bold text-primary mb-1.5">📝 وصف المسألة البرمجية للطلاب:</h4>
+                    <p className="text-xs text-on-surface-variant leading-relaxed">{activeLessonPlan.python_exercise.description}</p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-bold text-primary mb-2">💻 كود Python النموذجي:</h4>
+                    <div className="relative">
+                      <pre className="bg-surface-container text-emerald-600 dark:text-emerald-400 p-4 rounded-2xl text-xs font-mono overflow-x-auto text-left ltr">
+                        <code>{activeLessonPlan.python_exercise.code}</code>
+                      </pre>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(activeLessonPlan.python_exercise.code);
+                          alert('تم نسخ كود بايثون إلى الحافظة!');
+                        }}
+                        className="absolute top-3 right-3 text-[10px] bg-primary text-white font-bold px-2 py-1 rounded-lg hover:bg-primary-container transition-colors cursor-pointer"
+                      >
+                        نسخ الكود
+                      </button>
+                    </div>
+                  </div>
+
+                  {activeLessonPlan.python_exercise.tips && (
+                    <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
+                      <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-1">💡 نصائح لشرح وتوصيل الكود بسهولة:</h4>
+                      <p className="text-xs text-on-surface-variant leading-relaxed">{activeLessonPlan.python_exercise.tips}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTabPlan === 'quiz' && (
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-primary mb-2">📝 أسئلة تفاعلية لتقييم الفهم:</h4>
+                  {(activeLessonPlan.practice_quiz || []).map((q, idx) => (
+                    <div key={idx} className="p-4 rounded-2xl bg-surface-container border border-outline-variant/10 space-y-3">
+                      <p className="text-xs font-bold text-on-surface">{idx + 1}. {q.question}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(q.options || []).map((opt, oIdx) => (
+                          <div key={oIdx} className="p-2 rounded-xl bg-surface-container-low border border-outline-variant/10 text-xs text-on-surface-variant font-medium">
+                            {opt}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="pt-2 border-t border-outline-variant/10 flex flex-wrap gap-2 text-xs">
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">الإجابة الصحيحة: {q.correct_answer}</span>
+                        <p className="text-on-surface-variant leading-relaxed w-full"><span className="font-bold">التفسير: </span>{q.explanation}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-outline-variant/30 flex justify-between bg-surface-container/20">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(JSON.stringify(activeLessonPlan, null, 2));
+                  alert('تم نسخ خطة الدرس بالكامل بصيغة JSON!');
+                }}
+                className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 text-xs font-bold rounded-xl hover:bg-primary/20 transition-all cursor-pointer"
+              >
+                نسخ الخطة كاملة (JSON)
+              </button>
+              <button
+                onClick={() => setActiveLessonPlan(null)}
+                className="px-5 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/95 transition-all shadow cursor-pointer"
+              >
+                إغلاق النافذة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🎬 AI Short Script Modal */}
+      {activeScript && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-40 animate-fade-in">
+          <div className="bg-surface-container-lowest dark:bg-surface-container-lowest rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border border-outline-variant/30 text-on-surface">
+            {/* Header */}
+            <div className="p-6 border-b border-outline-variant/30 flex justify-between items-center bg-secondary/5">
+              <div>
+                <span className="text-[10px] font-bold text-secondary bg-secondary/10 px-2 py-0.5 rounded-lg mb-1 inline-block">سيناريو فيديو قصير للـ Shorts/Reels</span>
+                <h3 className="font-headline text-base font-bold">{activeScript.video_title || 'سيناريو الشرح المقترح'}</h3>
+              </div>
+              <button 
+                onClick={() => setActiveScript(null)}
+                className="p-1.5 hover:bg-outline-variant/20 rounded-full transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Hook */}
+              <div className="p-4 bg-secondary/5 border border-secondary/10 rounded-2xl">
+                <h4 className="text-xs font-bold text-secondary mb-1">📢 خطاف جذب الانتباه (Hook) - أول 5 ثواني:</h4>
+                <p className="text-xs font-bold text-on-surface leading-relaxed italic">"{activeScript.hook}"</p>
+              </div>
+
+              {/* Script Body */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-secondary mb-2">🎬 سيناريو ومسار الفيديو خطوة بخطوة:</h4>
+                <div className="space-y-3">
+                  {(activeScript.body || []).map((step, idx) => (
+                    <div key={idx} className="grid grid-cols-3 gap-3 p-3.5 rounded-xl bg-surface-container border border-outline-variant/10 text-xs">
+                      <div className="col-span-1 border-l border-outline-variant/20 pl-2">
+                        <span className="font-bold text-primary block mb-1">📹 المشهد المرئي</span>
+                        <span className="text-[10px] text-on-surface-variant">{step.visual}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="font-bold text-secondary block mb-1">🎙️ ما ستقوله بالعامية</span>
+                        <span className="text-on-surface-variant font-medium leading-relaxed">"{step.audio}"</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* CTA */}
+              {activeScript.call_to_action && (
+                <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
+                  <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-1">🎯 الدعوة للإجراء (Call to Action):</h4>
+                  <p className="text-xs text-on-surface-variant leading-relaxed font-semibold">"{activeScript.call_to_action}"</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-outline-variant/30 flex justify-between bg-surface-container/20">
+              <button
+                onClick={() => {
+                  const fullText = `عنوان الفيديو: ${activeScript.video_title}\n\nالخطاف (Hook):\n${activeScript.hook}\n\nالسيناريو:\n${activeScript.body.map((s, i) => `خطوة ${i+1}:\nالمرئي: ${s.visual}\nالصوت: ${s.audio}`).join('\n\n')}\n\nنهاية الفيديو: ${activeScript.call_to_action}`;
+                  navigator.clipboard.writeText(fullText);
+                  alert('تم نسخ سيناريو الفيديو بالكامل للمذكرة!');
+                }}
+                className="px-4 py-2 bg-secondary/10 text-secondary border border-secondary/20 text-xs font-bold rounded-xl hover:bg-secondary/20 transition-all cursor-pointer"
+              >
+                نسخ النص كاملاً
+              </button>
+              <button
+                onClick={() => setActiveScript(null)}
+                className="px-5 py-2 bg-secondary text-white text-xs font-bold rounded-xl hover:bg-secondary/95 transition-all shadow cursor-pointer"
+              >
+                إغلاق السيناريو
+              </button>
+            </div>
           </div>
         </div>
       )}

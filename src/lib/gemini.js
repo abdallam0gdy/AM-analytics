@@ -185,3 +185,74 @@ ${videoDetails.map((v, i) => `${i + 1}. ${v}`).join('\n')}
 
   return await callGemini(prompt);
 }
+
+/**
+ * Generate a combat lesson plan structure to target competitor weaknesses
+ */
+export async function generateCombatLessonPlan(competitorName, weaknesses = [], targetGrade = 'الصف الأول الثانوي') {
+  const weaknessesText = weaknesses && weaknesses.length > 0
+    ? weaknesses.map((w, i) => `${i + 1}. ${w}`).join('\n')
+    : 'نقص التطبيق العملي وغياب الأمثلة التطبيقية البرمجية';
+
+  const prompt = `أنت خبير تعليمي ومطور مناهج حاسب آلي وثانوي بمصر.
+صمم خطة درس (كورس مضاد) متكاملة تتفوق بها على المدرس المنافس (${competitorName}) الذي يعاني من نقاط الضعف التالية:
+${weaknessesText}
+
+الهدف: تصميم كورس لـ (${targetGrade}) يركز تماماً على معالجة وحل هذه النقاط وتقديم أفضل تجربة شرح للطلاب.
+
+أعطني الرد بصيغة JSON كالتالي:
+{
+  "lesson_title": "عنوان الدرس المقترح",
+  "objectives": ["هدف تعليمي 1", "هدف تعليمي 2"],
+  "explanation_strategy": "كيف سنشرح هذا الدرس بطريقة تتغلب على عيوب المنافس الكسلان",
+  "outline": [
+    {
+      "section_title": "عنوان الجزء 1",
+      "duration": "المدة المقترحة بالدقائق",
+      "concept": "ما سيتم شرحه وكيفية تبسيطه"
+    }
+  ],
+  "python_exercise": {
+    "title": "عنوان التطبيق العملي",
+    "description": "وصف المشكلة المطلوب حلها بالبرمجة",
+    "code": "كود بايثون البرمجي النموذجي للحل مع تعليقات توضيحية بالعربية",
+    "tips": "نصائح لشرح الكود للطلاب بسهولة"
+  },
+  "practice_quiz": [
+    {
+      "question": "السؤال 1 (اختيار من متعدد)",
+      "options": ["أ", "ب", "ج", "د"],
+      "correct_answer": "الإجابة الصحيحة",
+      "explanation": "لماذا هذه الإجابة صحيحة لتوضيح الفهم"
+    }
+  ]
+}`;
+
+  return await callGemini(prompt);
+}
+
+/**
+ * Generate a short 60-second video script to explain a student pain point/request
+ */
+export async function generateShortVideoScript(painPoint, channelName) {
+  const prompt = `أنت صانع محتوى تعليمي محترف ومحاضر تيك توك ويوتيوب شورتس ذكي.
+اكتب سيناريو فيديو قصير (YouTube Shorts / Reels) مدته 60 ثانية لحل المشكلة أو السؤال التالي الذي طرحه الطلاب:
+السؤال/نقطة الألم: "${painPoint}"
+
+المستهدف: تبسيط هذا المفهوم البرمجي لطلاب ثانوي في دقيقة واحدة بطريقة ممتعة وتفاعلية وجذابة جداً من الأستاذ (${channelName}).
+
+أعطني الرد بصيغة JSON كالتالي:
+{
+  "video_title": "عنوان الفيديو الجذاب (خطاف الانتباه)",
+  "hook": "الـ Hook (أول 5 ثواني لشد انتباه الطالب)",
+  "body": [
+    {
+      "visual": "ماذا يظهر على الشاشة (مثال: رسم كود، تعبيرات الوجه)",
+      "audio": "ما ستقوله بصوتك بالعامية المصرية المبسطة"
+    }
+  ],
+  "call_to_action": "ماذا تطلب من الطالب في النهاية (المتابعة، كتابة تعليق، إلخ)"
+}`;
+
+  return await callGemini(prompt);
+}
