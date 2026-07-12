@@ -1,0 +1,15 @@
+{
+  "name": "am-analytics-pipeline",
+  "version": "1.0.0",
+  "description": "Automated data pipeline for AM Analytics - discovers, filters, and analyzes educational competitors",
+  "type": "module",
+  "scripts": {
+    "pipeline": "node pipeline.mjs",
+    "radar": "node pipeline.mjs --stage=radar",
+    "analyze": "node pipeline.mjs --stage=analyze",
+    "cleanup": "node pipeline.mjs --stage=cleanup"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.0"
+  }
+}

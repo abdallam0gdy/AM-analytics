@@ -1,0 +1,314 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* =====================================================
+   AM Analytics - Design System (Tailwind CSS v4)
+   Premium dark-first dashboard design
+   ===================================================== */
+
+@theme {
+  /* Primary (Tech Blue) */
+  --color-primary: #0057c6;
+  --color-primary-container: #006ef7;
+  --color-primary-light: #3d8bff;
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+
+  /* Secondary/Accent (Energetic Orange) */
+  --color-accent: #a14000;
+  --color-accent-container: #fe6b08;
+  --color-accent-light: #ff8a3d;
+  --color-accent-50: #fff7ed;
+  --color-accent-100: #ffedd5;
+
+  /* Backgrounds */
+  --color-bg-light: #f1f5f9;
+  --color-bg-dark: #0a0f1e;
+
+  /* Surfaces / Cards */
+  --color-surface-light: #ffffff;
+  --color-surface-dark: #131b2e;
+  --color-surface-dark-hover: #1a2540;
+  --color-surface-dark-2: #0f1628;
+
+  /* Borders */
+  --color-border-light: #e2e8f0;
+  --color-border-dark: #1e2d4a;
+
+  /* Text */
+  --color-text-primary-light: #0f172a;
+  --color-text-secondary-light: #475569;
+  --color-text-primary-dark: #f1f5f9;
+  --color-text-secondary-dark: #8b9dc3;
+
+  /* Sidebar */
+  --color-sidebar-bg: #080d1a;
+
+  /* Font */
+  --font-sans: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+
+  /* Stitch AI Design Tokens */
+  --color-surface: #f7f9fb;
+  --color-surface-container: #eceef0;
+  --color-surface-container-low: #f2f4f6;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #424655;
+  --color-outline-variant: #c2c6d7;
+  --color-primary-fixed: #d9e2ff;
+  --color-primary-fixed-dim: #b0c6ff;
+  --color-secondary-fixed: #ffdbcc;
+  --color-tertiary-fixed: #e2e2e2;
+  --color-secondary-container: #fe6b08;
+
+  /* Animations */
+  --animate-fade-in: fade-in 0.6s ease-out both;
+  --animate-slide-up: slide-up 0.5s ease-out both;
+  --animate-slide-in-start: slide-in-start 0.4s ease-out both;
+  --animate-scale-in: scale-in 0.3s ease-out both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-start {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+/* =====================================================
+   Base Styles
+   ===================================================== */
+
+
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-light);
+  color: var(--color-text-primary-light);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+.dark body {
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-primary-dark);
+}
+
+.dark {
+  --color-surface: #0a0f1e;
+  --color-surface-container: #1e2d4a;
+  --color-surface-container-low: #0f1628;
+  --color-surface-container-lowest: #131b2e;
+  --color-on-surface: #f1f5f9;
+  --color-on-surface-variant: #8b9dc3;
+  --color-outline-variant: #1e2d4a;
+  --color-primary-fixed: #002e70;
+  --color-primary-fixed-dim: #001944;
+  --color-secondary-fixed: #571f00;
+  --color-tertiary-fixed: #2d3133;
+}
+
+/* =====================================================
+   Scrollbar Styling
+   ===================================================== */
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 10px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #2a3a5c;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* =====================================================
+   Utility Classes
+   ===================================================== */
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.dark .glass-card {
+  background: rgba(19, 27, 46, 0.7);
+  border: 1px solid rgba(30, 45, 74, 0.6);
+}
+
+.glow-primary {
+  box-shadow: 0 0 20px rgba(0, 87, 198, 0.15), 0 0 60px rgba(0, 87, 198, 0.05);
+}
+
+.glow-accent {
+  box-shadow: 0 0 20px rgba(254, 107, 8, 0.15), 0 0 60px rgba(254, 107, 8, 0.05);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-container) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark .gradient-text {
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.card-shadow {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.dark .card-shadow {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 1px rgba(255,255,255,0.05);
+}
+
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.dark .card-hover:hover {
+  box-shadow: 0 8px 25px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.08);
+}
+
+/* =====================================================
+   AM Analytics - Robust Layout & Spacing Helpers
+   Guarantees perfect padding, gaps, and sidebar behavior
+   ===================================================== */
+
+/* Sidebar Desktop Position Override */
+@media (min-width: 1024px) {
+  #main-sidebar {
+    position: sticky !important;
+    top: 0 !important;
+    inset-inline-start: 0 !important;
+    transform: none !important;
+    height: 100vh !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    z-index: 40 !important;
+  }
+}
+
+/* Page Container Padding & Spacing */
+.page-container {
+  padding: 1.5rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.5rem !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-inline: auto !important;
+}
+
+@media (max-width: 640px) {
+  .page-container {
+    padding: 1rem !important;
+    gap: 1rem !important;
+  }
+}
+
+/* Stats Card Grid */
+.stats-grid {
+  display: grid !important;
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  gap: 1.25rem !important;
+  width: 100% !important;
+}
+
+@media (min-width: 640px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Charts & Dashboard Main Grid */
+.charts-grid {
+  display: grid !important;
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  gap: 1.25rem !important;
+  width: 100% !important;
+}
+
+@media (min-width: 1024px) {
+  .charts-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Flex Gap Fallback for Lists and Headers */
+.flex-gap-2 {
+  gap: 0.5rem !important;
+}
+
+.flex-gap-3 {
+  gap: 0.75rem !important;
+}
+
+.flex-gap-4 {
+  gap: 1rem !important;
+}
+

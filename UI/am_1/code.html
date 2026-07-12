@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>لوحة تحكم AM Analytics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Geist:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary-container": "#571f00",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-container": "#fdfdfd",
+                        "surface-bright": "#f7f9fb",
+                        "primary-fixed-dim": "#b0c6ff",
+                        "primary-fixed": "#d9e2ff",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#7b2f00",
+                        "surface-container": "#eceef0",
+                        "on-secondary-fixed": "#351000",
+                        "tertiary-container": "#757575",
+                        "on-surface": "#191c1e",
+                        "surface-container-low": "#f2f4f6",
+                        "primary": "#0057c6",
+                        "surface-container-highest": "#e0e3e5",
+                        "inverse-primary": "#b0c6ff",
+                        "secondary": "#a14000",
+                        "on-surface-variant": "#424655",
+                        "on-primary-fixed": "#001944",
+                        "secondary-fixed-dim": "#ffb694",
+                        "on-primary-fixed-variant": "#00429a",
+                        "error-container": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#fe6b08",
+                        "outline": "#727786",
+                        "surface": "#f7f9fb",
+                        "on-tertiary-fixed-variant": "#474747",
+                        "surface-dim": "#d8dadc",
+                        "surface-tint": "#0058c9",
+                        "on-primary-container": "#fffdff",
+                        "secondary-fixed": "#ffdbcc",
+                        "tertiary": "#5c5c5c",
+                        "outline-variant": "#c2c6d7",
+                        "on-background": "#191c1e",
+                        "tertiary-fixed": "#e2e2e2",
+                        "inverse-surface": "#2d3133",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#e0e3e5",
+                        "surface-container-high": "#e6e8ea",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "inverse-on-surface": "#eff1f3",
+                        "primary-container": "#006ef7",
+                        "on-tertiary-fixed": "#1b1b1b",
+                        "background": "#f7f9fb"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "xxl": "1.5rem"
+                    },
+                    fontFamily: {
+                        "headline": ["Be Vietnam Pro"],
+                        "display": ["Be Vietnam Pro"],
+                        "body": ["Ibm Plex Sans"],
+                        "label": ["Geist"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background-color: #f7f9fb;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-nav-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="text-on-background">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 bg-surface-container-lowest shadow-sm px-4 py-3 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-lg">AM</div>
+<h1 class="font-headline text-title-md font-bold text-primary tracking-tight">AM Analytics</h1>
+</div>
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full border-2 border-primary-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a Middle Eastern male executive in a sleek modern office environment. He is wearing a sharp navy blue suit and smiling confidently. The lighting is bright and airy with soft blue and white architectural highlights in the background, matching a high-end corporate dashboard aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAW5NRWzY4zWo1FaxurHQVxUUXjaDQ08SA3qsJmMyJXEyRntXzmYIdAUc658734ABkE7LMCEr7GNH0FPHCDocVI97BZ6zKXAMprQYuvl915l6UtTsnc8mK84stho3kFErDhMVM_lICU2q1Eo8XeYqH_MsmiAPGUqvvfh_cWHGnFEOL2GkNAMgtwLa3M1HtU-E0S3CFmR5jPuS-2dv1z42H_K7DypUVhnWXoDOxifSfh_xtIQdMGFlq2"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="p-4 pb-24 space-y-6 max-w-md mx-auto">
+<!-- Welcome Section -->
+<section>
+<h2 class="font-headline text-headline-lg-mobile text-on-surface mb-1">أهلاً، م. أحمد</h2>
+<p class="font-body text-body-md text-on-surface-variant">إليك آخر تحليلات الأداء التعليمي لليوم</p>
+</section>
+<!-- KPI Metrics - Vertical Stack -->
+<section class="grid grid-cols-1 gap-4">
+<!-- Metric Card 1 -->
+<div class="bg-surface-container-lowest p-5 rounded-xxl shadow-sm border border-outline-variant flex items-center justify-between group active:scale-[0.98] transition-transform">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-primary-container/10 rounded-xl flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">monitoring</span>
+</div>
+<div>
+<p class="text-label-caps text-on-surface-variant mb-1">قنوات تعليمية مراقبة</p>
+<h3 class="font-headline text-title-md font-bold text-on-surface">1,284</h3>
+</div>
+</div>
+<div class="text-left">
+<span class="text-sm font-semibold text-green-600 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">trending_up</span>
+                        12%
+                    </span>
+<div class="w-16 h-4 opacity-50 mt-1">
+<!-- Tiny Sparkline placeholder via CSS gradient -->
+<div class="h-full w-full bg-gradient-to-r from-primary/20 via-primary to-primary/40 rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Metric Card 2 -->
+<div class="bg-surface-container-lowest p-5 rounded-xxl shadow-sm border border-outline-variant flex items-center justify-between active:scale-[0.98] transition-transform">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-secondary-container/10 rounded-xl flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">groups</span>
+</div>
+<div>
+<p class="text-label-caps text-on-surface-variant mb-1">متوسط التفاعل العام</p>
+<h3 class="font-headline text-title-md font-bold text-on-surface">86.4%</h3>
+</div>
+</div>
+<div class="text-left">
+<span class="text-sm font-semibold text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">trending_up</span>
+                        5.2%
+                    </span>
+<div class="w-16 h-4 opacity-50 mt-1">
+<div class="h-full w-full bg-gradient-to-r from-secondary/20 via-secondary to-secondary/40 rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Metric Card 3 -->
+<div class="bg-surface-container-lowest p-5 rounded-xxl shadow-sm border border-outline-variant flex items-center justify-between active:scale-[0.98] transition-transform">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-tertiary-container/10 rounded-xl flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">timer</span>
+</div>
+<div>
+<p class="text-label-caps text-on-surface-variant mb-1">وقت التعلم النشط</p>
+<h3 class="font-headline text-title-md font-bold text-on-surface">42m</h3>
+</div>
+</div>
+<div class="text-left">
+<span class="text-sm font-semibold text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">remove</span>
+                        0%
+                    </span>
+<div class="w-16 h-4 opacity-30 mt-1">
+<div class="h-full w-full bg-tertiary rounded-full"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Performance Chart Section -->
+<section class="bg-surface-container-lowest p-5 rounded-xxl border border-outline-variant shadow-sm overflow-hidden">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline text-title-md font-bold text-on-surface">نقاط الضعف والقوة</h3>
+<button class="text-primary text-sm font-semibold">التفاصيل</button>
+</div>
+<div class="space-y-5">
+<!-- Bar 1 -->
+<div class="space-y-2">
+<div class="flex justify-between text-sm font-medium text-on-surface-variant">
+<span>البرمجة بلغة Python</span>
+<span class="text-on-surface font-bold">92%</span>
+</div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-1000" style="width: 92%;"></div>
+</div>
+</div>
+<!-- Bar 2 -->
+<div class="space-y-2">
+<div class="flex justify-between text-sm font-medium text-on-surface-variant">
+<span>الذكاء الاصطناعي</span>
+<span class="text-on-surface font-bold">78%</span>
+</div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary/70 rounded-full transition-all duration-1000" style="width: 78%;"></div>
+</div>
+</div>
+<!-- Bar 3 -->
+<div class="space-y-2">
+<div class="flex justify-between text-sm font-medium text-on-surface-variant">
+<span>هياكل البيانات</span>
+<span class="text-on-surface font-bold">64%</span>
+</div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full transition-all duration-1000" style="width: 64%;"></div>
+</div>
+</div>
+<!-- Bar 4 -->
+<div class="space-y-2">
+<div class="flex justify-between text-sm font-medium text-on-surface-variant">
+<span>تطوير الواجهات</span>
+<span class="text-on-surface font-bold">45%</span>
+</div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-error rounded-full transition-all duration-1000" style="width: 45%;"></div>
+</div>
+</div>
+</div>
+<div class="mt-6 pt-4 border-t border-outline-variant flex justify-around">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 bg-primary rounded-full"></span>
+<span class="text-xs text-on-surface-variant">ممتاز</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 bg-secondary rounded-full"></span>
+<span class="text-xs text-on-surface-variant">متوسط</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 bg-error rounded-full"></span>
+<span class="text-xs text-on-surface-variant">تحتاج تركيز</span>
+</div>
+</div>
+</section>
+<!-- Competitor List -->
+<section>
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-headline text-title-md font-bold text-on-surface">المنافسون الرئيسيون</h3>
+<span class="text-xs px-2 py-1 bg-surface-container-high rounded text-on-surface-variant">أعلى 5</span>
+</div>
+<div class="flex gap-4 overflow-x-auto hide-scrollbar pb-2 px-1">
+<!-- Competitor Card 1 -->
+<div class="min-w-[160px] bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant flex flex-col items-center text-center">
+<div class="w-14 h-14 bg-surface-container rounded-full mb-3 overflow-hidden ring-2 ring-primary/10">
+<img class="w-full h-full object-cover" data-alt="A minimalist tech company logo featuring a sleek abstract letter 'E' in electric blue and white. The background is a clean, slightly textured paper texture to emphasize a professional educational platform feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4bASZoBwrnR9hRz552Y6vH_Sysn8ZU3l95p4LelNZuhUr88WpTYh5wkeGPm0RBReu6yjHQivP5xH_WxgJSRm1kQFMVYpLCqJoTBZULaMS3Y0A6WbjIvJCOKyvnjexnCJ3nMDPMUe3fB7U5VXOew2vK8tos9iiOgL5IplEy0Yo0WD73Xltiscp-UYG1aWGavEcCdc6h6WBSe1i83UUQk8if40EuiOZRkpgFUKYAiouqESzRRYpadm_"/>
+</div>
+<p class="font-bold text-on-surface text-sm mb-1">Edutech Plus</p>
+<p class="text-xs text-on-surface-variant mb-3">نمو: +18%</p>
+<button class="w-full py-2 bg-surface-container text-primary font-bold text-xs rounded-lg active:bg-primary active:text-white transition-all">مقارنة</button>
+</div>
+<!-- Competitor Card 2 -->
+<div class="min-w-[160px] bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant flex flex-col items-center text-center">
+<div class="w-14 h-14 bg-surface-container rounded-full mb-3 overflow-hidden ring-2 ring-primary/10">
+<img class="w-full h-full object-cover" data-alt="A vibrant startup logo representing a coding academy. It features a stylized orange rocket ship taking off from a book, with bold modern typography. High-energy colors including energetic orange and bright white." src="https://lh3.googleusercontent.com/aida-public/AB6AXuArvyyg1QoeTjw2bK9XyCFVng5blCTV2NTMj5u73gGhnO-9fmu9uzB7plpddxagwAp4VQbNmVL8RJ6TKPfBOso39v_CRyfEKdCteclB4p_P2mpPif37Zn-ePMxD4OsyrotrT6okY9j3hOjIaxVTtFX2BjPuStxtklteT-0xUI2kQgFzYVX7BUQJM5zBznMrE2GW2njMYg00b3mSGV5IIq3o_rSwOgkZUZ8y_8hCggJt1hd_yCgrrF9X"/>
+</div>
+<p class="font-bold text-on-surface text-sm mb-1">Code Academy</p>
+<p class="text-xs text-on-surface-variant mb-3">نمو: +12%</p>
+<button class="w-full py-2 bg-surface-container text-primary font-bold text-xs rounded-lg active:bg-primary active:text-white transition-all">مقارنة</button>
+</div>
+<!-- Competitor Card 3 -->
+<div class="min-w-[160px] bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant flex flex-col items-center text-center">
+<div class="w-14 h-14 bg-surface-container rounded-full mb-3 overflow-hidden ring-2 ring-primary/10">
+<img class="w-full h-full object-cover" data-alt="A clean corporate logo for a global learning management system. Geometric shapes forming a brain in various shades of teal and slate blue. Modern, trustworthy and high-tech professional look." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlo_hoNph9FjX3295AarikWhVvgBrVun_pSKZ54KdemKnv3Ph-w1GCQi_O2dBLCFbKWF4MdXgk-Ifmz3fL7gRMWFZi-Frf7DeiXX97moYaLzk1tMX_f0BOCnAW-bkFhjn495hs89t4OXCq7f1fleQh3CmCi8sjfvNL2lKWt4zsSFlD92Vpoej19lqiMiyaAZAt4Gm5jPF31vQYRWfMoR8JIosvHPtn8aXOg2CG7mkqaq9G6E6Z_zdu"/>
+</div>
+<p class="font-bold text-on-surface text-sm mb-1">SkillSphere</p>
+<p class="text-xs text-on-surface-variant mb-3">نمو: +5%</p>
+<button class="w-full py-2 bg-surface-container text-primary font-bold text-xs rounded-lg active:bg-primary active:text-white transition-all">مقارنة</button>
+</div>
+</div>
+</section>
+<!-- Golden Opportunities -->
+<section class="bg-gradient-to-br from-secondary to-on-secondary-container p-6 rounded-xxl text-white shadow-lg relative overflow-hidden">
+<!-- Background Decoration -->
+<div class="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-yellow-300" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h3 class="font-headline text-title-md font-bold">فرص ذهبية</h3>
+</div>
+<p class="font-body text-body-md opacity-90 mb-6">لقد اكتشف محركنا 3 فجوات محتوى جديدة في سوق الـ Backend حالياً. ابدأ بإنتاج دروس Node.js المتقدمة.</p>
+<div class="flex items-center justify-between">
+<div class="flex -space-x-2 rtl:space-x-reverse">
+<div class="w-8 h-8 rounded-full border-2 border-secondary bg-surface-container-high overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close-up of a diverse group of young adult students collaborating on a laptop in a bright, modern learning hub. Soft focus on background, high-key lighting, vibrant and energetic mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxg6W04wiyDJCgCPvnwDe9o19PJzE--biYwXiymWHc4t264OurMB8YI5_1dUaxT717o0H6xyPL_azso3AhDi1dpHK8kDWg09tM6i2q-e0zIm7wPSm8UN5qMn8Q4jmQ4KFnFKwA_EL2Z7OZ19VxHw3G9eaWlskugG8ThDViTEzHl-o-VG_uvqk6pi-McXSSf67_I_M0DEqWM73sbwxkcyT09UOO1eTVQu8x0QtXL051kiLWvRBvc439"/>
+</div>
+<div class="w-8 h-8 rounded-full border-2 border-secondary bg-surface-container-high overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close-up of a student wearing high-tech headphones, focused on a code editor screen reflecting in their glasses. Cinematic lighting with blue and orange tech tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgtObo40m4mwaoS6anfwU-4RwjTBh2kR4P7gqvCZ8GlXocssqrOw2-DW97cMjkNZWT2OCORq3LPqQut4vQ_pjiHPox0KO5w3b9KFq6WSZ3yB-WP0qaRjDVeXUfw7ZmHXtja_YTBUIPnN7uIDy0qn8N6bg92U3dfew6xFAjN6yv0VSya7TxNzA5EWG3KEKNxR3JXFb1z5mUKQKGxNTiT9stm_FpM7S5xf10PDjNPFkaCtktMf0yRia0"/>
+</div>
+<div class="w-8 h-8 rounded-full border-2 border-secondary bg-surface-container-high flex items-center justify-center bg-white text-secondary text-[10px] font-bold">+12</div>
+</div>
+<button class="px-5 py-2 bg-white text-secondary font-bold rounded-lg text-sm shadow-sm active:scale-95 transition-transform">عرض التقرير</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-surface-container-lowest/90 backdrop-blur-md shadow-[0_-1px_10px_rgba(0,0,0,0.05)] border-t border-outline-variant/30 px-6 py-2 flex items-center justify-between">
+<!-- Dashboard (Active) -->
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="bg-primary-container/20 text-primary px-5 py-1.5 rounded-full mb-0.5 transition-colors">
+<span class="material-symbols-outlined active-nav-icon">dashboard</span>
+</div>
+<span class="text-[11px] font-bold text-primary">الرئيسية</span>
+</a>
+<!-- Course Analysis -->
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="text-on-surface-variant px-5 py-1.5 rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<span class="text-[11px] font-medium text-on-surface-variant">تحليل الدورات</span>
+</a>
+<!-- AI Reports -->
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="text-on-surface-variant px-5 py-1.5 rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">psychology</span>
+</div>
+<span class="text-[11px] font-medium text-on-surface-variant">تقارير AI</span>
+</a>
+</nav>
+<!-- Floating Action Button (FAB) -->
+<button class="fixed bottom-20 left-6 w-14 h-14 bg-secondary-container text-white rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform z-40">
+<span class="material-symbols-outlined" style="font-variation-settings: 'wght' 600;">add</span>
+</button>
+<script>
+        // Micro-interaction for bar chart animation on scroll/load
+        document.addEventListener('DOMContentLoaded', () => {
+            const bars = document.querySelectorAll('.h-full.bg-primary, .h-full.bg-secondary, .h-full.bg-error');
+            bars.forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 300);
+            });
+        });
+
+        // Simple touch interaction for cards
+        const cards = document.querySelectorAll('.bg-surface-container-lowest');
+        cards.forEach(card => {
+            card.addEventListener('touchstart', () => {
+                card.style.transform = 'scale(0.98)';
+            });
+            card.addEventListener('touchend', () => {
+                card.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body></html>

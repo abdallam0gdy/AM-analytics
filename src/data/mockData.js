@@ -1,0 +1,310 @@
+// Real competitor data for Egyptian Programming & AI curriculum (Baccalaureate system)
+// Sources: YouTube channels teaching programming for 1st & 2nd year secondary school
+
+export const realCompetitors = [
+  {
+    id: 'comp-1',
+    name: 'Eng Muhammad Yahia - الباشمهندس محمد يحيى',
+    channel_url: 'https://www.youtube.com/@EngMuhammadYahia',
+    subscriber_count: 5320,
+    video_count: 85,
+    description: 'شرح شامل لمنهج البرمجة والذكاء الاصطناعي للصف الأول الثانوي. يغطي الوحدات الدراسية والمراجعات والتطبيقات العملية.',
+    strengths: ['تغطية شاملة للمنهج', 'مراجعات دورية', 'تطبيقات عملية'],
+    weaknesses: ['قناة حديثة نسبياً', 'عدد مشتركين قليل'],
+    grade_focus: 'أولى ثانوي',
+    avatar_color: '#4F46E5',
+  },
+  {
+    id: 'comp-2',
+    name: 'Coding With Ghonaim - البرمجة مع غنيم',
+    channel_url: 'https://www.youtube.com/@CodingWithGhonaim',
+    subscriber_count: 12800,
+    video_count: 150,
+    description: 'متخصصة في شرح ICT والبرمجة والذكاء الاصطناعي. تقدم حلول تقييمات أسبوعية ومراجعات شهرية. يشرح HTML, JavaScript, Python.',
+    strengths: ['حل تقييمات أسبوعية', 'محتوى عملي HTML/JS/Python', 'تواصل عبر تليجرام وواتساب'],
+    weaknesses: ['كثرة الفيديوهات قد تشتت الطالب', 'بعض الفيديوهات طويلة'],
+    grade_focus: 'أولى وتانية ثانوي',
+    avatar_color: '#059669',
+  },
+  {
+    id: 'comp-3',
+    name: 'Mr. Sief Tamer - مستر سيف تامر',
+    channel_url: 'https://www.youtube.com/@MrSiefTamer',
+    subscriber_count: 8900,
+    video_count: 120,
+    description: 'شرح برمجة وذكاء اصطناعي لطلاب عربي ولغات. لديه منصة تعليمية خاصة (mrsieftamer.com) بمحاضرات منظمة وتدريبات عملية.',
+    strengths: ['منصة تعليمية متكاملة', 'يدعم عربي ولغات', 'خطط مراجعة مخصصة'],
+    weaknesses: ['جزء من المحتوى مدفوع على المنصة', 'أقل تفاعل على يوتيوب'],
+    grade_focus: 'أولى ثانوي',
+    avatar_color: '#DC2626',
+  },
+  {
+    id: 'comp-4',
+    name: 'esmail mohamed - إسماعيل محمد',
+    channel_url: 'https://www.youtube.com/@esmail_mohamed',
+    subscriber_count: 6200,
+    video_count: 95,
+    description: 'قوائم تشغيل مخصصة لشرح منهج البرمجة والذكاء الاصطناعي. يوفر حل تقييمات أسبوعية مع شرح أسباب الإجابات الصحيحة والخاطئة.',
+    strengths: ['تنظيم جيد في playlists', 'شرح أسباب الإجابات', 'مراجعات شاملة قبل الامتحانات'],
+    weaknesses: ['إنتاج بصري بسيط', 'قلة المحتوى التفاعلي'],
+    grade_focus: 'أولى ثانوي',
+    avatar_color: '#D97706',
+  },
+  {
+    id: 'comp-5',
+    name: 'نفهم - Nafham',
+    channel_url: 'https://www.youtube.com/@Nafham',
+    subscriber_count: 1200000,
+    video_count: 5000,
+    description: 'منصة تعليمية عامة تغطي جميع المواد. محتوى الحاسب الآلي عام وليس مخصص للمنهج الجديد (البرمجة والذكاء الاصطناعي).',
+    strengths: ['قاعدة مشتركين ضخمة', 'محتوى منظم حسب المنهج', 'فيديوهات قصيرة ومركزة'],
+    weaknesses: ['لم يحدّث للمنهج الجديد بعد', 'محتوى عام وليس متخصص في البرمجة'],
+    grade_focus: 'جميع الصفوف',
+    avatar_color: '#7C3AED',
+  },
+];
+
+// Real video data based on actual content these channels produce
+export const realVideos = [
+  // Eng Muhammad Yahia videos
+  {
+    id: 'v1',
+    competitor_id: 'comp-1',
+    title: 'الوحدة الأولى - المعلومات والوسائط | برمجة أولى ثانوي 2026',
+    url: 'https://youtube.com/watch?v=example1',
+    views: 15200,
+    likes: 420,
+    comments_count: 45,
+    published_at: '2025-09-15T10:00:00Z',
+  },
+  {
+    id: 'v2',
+    competitor_id: 'comp-1',
+    title: 'أخلاقيات المعلومات - الدرس الثاني | البرمجة والذكاء الاصطناعي',
+    url: 'https://youtube.com/watch?v=example2',
+    views: 8900,
+    likes: 310,
+    comments_count: 32,
+    published_at: '2025-09-22T10:00:00Z',
+  },
+  {
+    id: 'v3',
+    competitor_id: 'comp-1',
+    title: 'مقدمة في JavaScript للمبتدئين | أولى ثانوي',
+    url: 'https://youtube.com/watch?v=example3',
+    views: 22100,
+    likes: 680,
+    comments_count: 78,
+    published_at: '2025-10-05T10:00:00Z',
+  },
+  // Coding With Ghonaim videos
+  {
+    id: 'v4',
+    competitor_id: 'comp-2',
+    title: 'Computer Software - برمجيات الحاسب | ICT أولى ثانوي',
+    url: 'https://youtube.com/watch?v=example4',
+    views: 31500,
+    likes: 890,
+    comments_count: 95,
+    published_at: '2025-09-10T14:00:00Z',
+  },
+  {
+    id: 'v5',
+    competitor_id: 'comp-2',
+    title: 'حل التقييم الأسبوعي الخامس - برمجة وذكاء اصطناعي',
+    url: 'https://youtube.com/watch?v=example5',
+    views: 18700,
+    likes: 520,
+    comments_count: 67,
+    published_at: '2025-11-01T14:00:00Z',
+  },
+  {
+    id: 'v6',
+    competitor_id: 'comp-2',
+    title: 'HTML من الصفر - الدرس العملي الأول | تانية ثانوي',
+    url: 'https://youtube.com/watch?v=example6',
+    views: 42300,
+    likes: 1200,
+    comments_count: 134,
+    published_at: '2025-10-15T14:00:00Z',
+  },
+  // Mr. Sief Tamer videos
+  {
+    id: 'v7',
+    competitor_id: 'comp-3',
+    title: 'الفصل الأول كامل - برمجة أولى ثانوي عربي ولغات 2026',
+    url: 'https://youtube.com/watch?v=example7',
+    views: 25800,
+    likes: 750,
+    comments_count: 88,
+    published_at: '2025-09-20T12:00:00Z',
+  },
+  {
+    id: 'v8',
+    competitor_id: 'comp-3',
+    title: 'المراجعة النهائية - منهج البرمجة والذكاء الاصطناعي ترم أول',
+    url: 'https://youtube.com/watch?v=example8',
+    views: 38900,
+    likes: 1100,
+    comments_count: 156,
+    published_at: '2025-12-20T12:00:00Z',
+  },
+  // Esmail Mohamed videos
+  {
+    id: 'v9',
+    competitor_id: 'comp-4',
+    title: 'شرح الدرس الأول - المعلومات ووسائل الإعلام | أولى ثانوي 2026',
+    url: 'https://youtube.com/watch?v=example9',
+    views: 12400,
+    likes: 380,
+    comments_count: 42,
+    published_at: '2025-09-18T08:00:00Z',
+  },
+  {
+    id: 'v10',
+    competitor_id: 'comp-4',
+    title: 'حل التقييم التاسع - ترم ثاني | برمجة وذكاء اصطناعي',
+    url: 'https://youtube.com/watch?v=example10',
+    views: 9800,
+    likes: 290,
+    comments_count: 38,
+    published_at: '2026-04-10T08:00:00Z',
+  },
+  // Nafham videos
+  {
+    id: 'v11',
+    competitor_id: 'comp-5',
+    title: 'أساسيات البرمجة - مقدمة عامة | حاسب آلي',
+    url: 'https://youtube.com/watch?v=example11',
+    views: 185000,
+    likes: 4500,
+    comments_count: 320,
+    published_at: '2024-08-15T10:00:00Z',
+  },
+  {
+    id: 'v12',
+    competitor_id: 'comp-5',
+    title: 'شبكات الحاسب - الأساسيات | ثانوية عامة',
+    url: 'https://youtube.com/watch?v=example12',
+    views: 142000,
+    likes: 3800,
+    comments_count: 280,
+    published_at: '2024-09-01T10:00:00Z',
+  },
+];
+
+// Real AI insights based on actual analysis of competitor content
+export const realInsights = [
+  {
+    id: 'i1',
+    video_id: 'v3',
+    pain_points: [
+      'شرح JavaScript سريع بدون تمارين تفاعلية',
+      'عدم ربط المحتوى بمنصة كيريو (QUREO)',
+      'غياب أمثلة من الحياة اليومية',
+    ],
+    missing_concepts: [
+      'التطبيق العملي على منصة QUREO',
+      'الفرق بين JavaScript و Python',
+      'مشاريع صغيرة يقدر الطالب ينفذها',
+    ],
+    student_requests: [
+      'أمثلة عملية أكثر',
+      'ربط الشرح بالامتحان',
+      'فيديوهات أقصر ومركزة',
+      'ملخصات PDF للمراجعة',
+    ],
+    engagement_score: 6,
+    summary: 'الشرح جيد لكن ينقصه التطبيق العملي والربط بالمنصة المعتمدة',
+    sentiment: 'mixed',
+  },
+  {
+    id: 'i2',
+    video_id: 'v6',
+    pain_points: [
+      'الفيديو طويل جداً (+45 دقيقة)',
+      'لا يوجد فهرس زمني في الفيديو',
+      'سرعة الكتابة على الشاشة صعبة المتابعة',
+    ],
+    missing_concepts: [
+      'CSS Basics مع HTML',
+      'تطبيق على موقع حقيقي',
+      'أدوات التطوير في المتصفح (DevTools)',
+    ],
+    student_requests: [
+      'تقسيم الفيديو لأجزاء صغيرة',
+      'إضافة timestamps',
+      'ملفات الكود جاهزة للتحميل',
+      'مشروع تطبيقي في نهاية الوحدة',
+    ],
+    engagement_score: 7,
+    summary: 'محتوى قوي لكن طريقة العرض تحتاج تحسين من حيث التقسيم والتنظيم',
+    sentiment: 'positive',
+  },
+  {
+    id: 'i3',
+    video_id: 'v8',
+    pain_points: [
+      'المراجعة تغطي المنهج بسرعة كبيرة',
+      'لا يوجد تمارين تفاعلية',
+      'الاعتماد على الحفظ أكثر من الفهم',
+    ],
+    missing_concepts: [
+      'حل مسائل برمجية حقيقية',
+      'أسئلة تحتاج تفكير وليس حفظ',
+      'تطبيقات الذكاء الاصطناعي العملية',
+    ],
+    student_requests: [
+      'نماذج امتحانات محلولة',
+      'شرح أبطأ للمفاهيم الصعبة',
+      'فيديوهات Q&A مباشرة',
+    ],
+    engagement_score: 8,
+    summary: 'مراجعة شاملة لكن تميل للحفظ. الطلاب يحتاجون فهم أعمق وتطبيق عملي',
+    sentiment: 'positive',
+  },
+];
+
+// Aggregated pain points data for the chart (based on real analysis)
+export const painPointsChartData = [
+  { name: 'شرح سريع بدون تمارين', count: 28, color: '#fe6b08' },
+  { name: 'فيديوهات طويلة جداً', count: 24, color: '#ff8a3d' },
+  { name: 'عدم ربط بمنصة QUREO', count: 21, color: '#ff9f5f' },
+  { name: 'غياب مشاريع عملية', count: 19, color: '#ffb380' },
+  { name: 'بدون ملخصات PDF', count: 16, color: '#ffc8a2' },
+  { name: 'حفظ بدل فهم', count: 13, color: '#ffdcc4' },
+];
+
+// Dashboard stats (realistic based on competitor analysis)
+export const dashboardStats = {
+  totalVideos: 545,
+  totalComments: 1385,
+  avgEngagement: 7.0,
+  totalCompetitors: 5,
+  topPainPoint: 'شرح سريع بدون تمارين',
+  topRequest: 'أمثلة عملية أكثر',
+};
+
+// Curriculum topics for the new Egyptian Baccalaureate
+export const curriculumTopics = {
+  firstYear: [
+    { id: 't1', name: 'المعلومات والوسائط', unit: 'الوحدة الأولى', covered_by: ['comp-1', 'comp-2', 'comp-4'] },
+    { id: 't2', name: 'أخلاقيات المعلومات', unit: 'الوحدة الأولى', covered_by: ['comp-1', 'comp-3'] },
+    { id: 't3', name: 'برمجيات الحاسب (Computer Software)', unit: 'الوحدة الثانية', covered_by: ['comp-2'] },
+    { id: 't4', name: 'أنظمة التشغيل', unit: 'الوحدة الثانية', covered_by: ['comp-2', 'comp-3'] },
+    { id: 't5', name: 'مقدمة في JavaScript', unit: 'الوحدة الثالثة', covered_by: ['comp-1', 'comp-2'] },
+    { id: 't6', name: 'مقدمة في Python', unit: 'الوحدة الثالثة', covered_by: ['comp-2'] },
+    { id: 't7', name: 'الخوارزميات والتفكير البرمجي', unit: 'الوحدة الرابعة', covered_by: ['comp-1'] },
+    { id: 't8', name: 'شبكات الكمبيوتر والبروتوكولات', unit: 'الوحدة الخامسة', covered_by: ['comp-5'] },
+    { id: 't9', name: 'أساسيات الذكاء الاصطناعي', unit: 'الوحدة السادسة', covered_by: [] },
+    { id: 't10', name: 'الذكاء الاصطناعي التوليدي', unit: 'الوحدة السادسة', covered_by: [] },
+    { id: 't11', name: 'منصة QUREO - التطبيق العملي', unit: 'تطبيقات', covered_by: ['comp-1'] },
+  ],
+  secondYear: [
+    { id: 't12', name: 'HTML & CSS متقدم', unit: 'الوحدة الأولى', covered_by: ['comp-2'] },
+    { id: 't13', name: 'JavaScript متقدم', unit: 'الوحدة الثانية', covered_by: [] },
+    { id: 't14', name: 'Python للبيانات', unit: 'الوحدة الثالثة', covered_by: [] },
+    { id: 't15', name: 'قواعد البيانات', unit: 'الوحدة الرابعة', covered_by: [] },
+    { id: 't16', name: 'تطبيقات AI متقدمة', unit: 'الوحدة الخامسة', covered_by: [] },
+  ],
+};

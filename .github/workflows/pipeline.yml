@@ -1,0 +1,38 @@
+name: AM Analytics - Data Pipeline
+
+# يشتغل كل يوم جمعة الساعة 12 منتصف الليل (توقيت مصر = 22:00 UTC الخميس)
+on:
+  schedule:
+    - cron: '0 22 * * 4'  # Thursday 22:00 UTC = Friday 00:00 Cairo
+  workflow_dispatch:        # تشغيل يدوي من GitHub
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📦 Install dependencies
+        working-directory: scripts
+        run: npm install
+
+      - name: 🚀 Run Pipeline
+        working-directory: scripts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node pipeline.mjs
+
+      - name: 📊 Summary
+        if: always()
+        run: echo "✅ Pipeline finished at $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
