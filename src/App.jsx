@@ -3,6 +3,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import MainLayout from './components/layout/MainLayout';
 import Overview from './pages/Overview';
 import Competitors from './pages/Competitors';
+import Comments from './pages/Comments';
 import AIReports from './pages/AIReports';
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
           <Route element={<MainLayout />}>
             <Route index element={<Overview />} />
             <Route path="competitors" element={<Competitors />} />
+            <Route path="comments" element={<Comments />} />
             <Route path="ai-reports" element={<AIReports />} />
           </Route>
         </Routes>

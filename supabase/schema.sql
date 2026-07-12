@@ -183,20 +183,48 @@ ORDER BY frequency DESC
 LIMIT 20;
 
 -- =====================================================
--- 8. Row Level Security (RLS)
+-- 8. Comments Table (تعليقات الطلاب التفصيلية)
+-- =====================================================
+CREATE TABLE comments (
+  id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  video_id            UUID NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+  competitor_id       UUID NOT NULL REFERENCES competitors(id) ON DELETE CASCADE,
+  youtube_comment_id  TEXT UNIQUE,             -- YouTube comment ID to avoid duplicates
+  author_name         TEXT,                    -- اسم الطالب
+  author_avatar       TEXT,                    -- صورة الطالب
+  content             TEXT NOT NULL,           -- نص التعليق
+  like_count          INTEGER DEFAULT 0,       -- إعجابات التعليق
+  published_at        TIMESTAMPTZ,             -- تاريخ نشر التعليق
+  sentiment           TEXT DEFAULT 'neutral',  -- مشاعر التعليق (positive/negative/neutral)
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_comments_video ON comments (video_id);
+CREATE INDEX idx_comments_competitor ON comments (competitor_id);
+CREATE INDEX idx_comments_published ON comments (published_at DESC);
+CREATE INDEX idx_comments_youtube_id ON comments (youtube_comment_id);
+
+-- =====================================================
+-- 9. Row Level Security (RLS)
 -- =====================================================
 ALTER TABLE competitors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_insights ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pipeline_runs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 
 -- سياسة: السماح بكل العمليات للمستخدمين المصادق عليهم
 -- (عدّل حسب احتياجاتك الأمنية)
 DO $$
 DECLARE
   t TEXT;
+END $$;
+
+DO $$
+DECLARE
+  t TEXT;
 BEGIN
-  FOR t IN SELECT unnest(ARRAY['competitors', 'videos', 'ai_insights', 'pipeline_runs'])
+  FOR t IN SELECT unnest(ARRAY['competitors', 'videos', 'ai_insights', 'pipeline_runs', 'comments'])
   LOOP
     EXECUTE format('CREATE POLICY "anon_read_%1$s" ON %1$s FOR SELECT TO anon USING (true)', t);
     EXECUTE format('CREATE POLICY "anon_insert_%1$s" ON %1$s FOR INSERT TO anon WITH CHECK (true)', t);

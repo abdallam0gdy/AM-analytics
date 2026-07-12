@@ -363,7 +363,7 @@ export async function runFrontendPipeline(onProgress = () => {}) {
             .single();
 
           if (!videoErr && savedVideo) {
-            filteredVideos.push({ dbId: savedVideo.id, ytId: vidId, title: video.title, commentsCount: stats.comments_count });
+            filteredVideos.push({ dbId: savedVideo.id, ytId: vidId, title: video.title, commentsCount: stats.comments_count, competitorId: competitorDbId });
           }
         }
       } catch (err) {
@@ -383,11 +383,17 @@ export async function runFrontendPipeline(onProgress = () => {}) {
       });
 
       try {
-        // Fetch comments
+        // Fetch comments threads (rich object arrays)
         const commentsList = vid.commentsCount > 0 ? await getVideoComments(vid.ytId) : [];
         
-        // Analyze comments with Gemini
-        const analysis = await analyzeCommentsWithAI(vid.title, commentsList);
+        // Save all comments to the dedicated comments table!
+        if (commentsList.length > 0) {
+          await saveCommentsToDb(vid.competitorId, vid.dbId, commentsList);
+        }
+
+        // Analyze comments with Gemini using the text content
+        const commentsTextOnly = commentsList.map(c => c.content);
+        const analysis = await analyzeCommentsWithAI(vid.title, commentsTextOnly);
 
         // Save AI insights
         await supabase.from('ai_insights').insert({
@@ -457,20 +463,58 @@ export async function runFrontendPipeline(onProgress = () => {}) {
   }
 }
 
-// Fetch comments helper
+// Fetch rich comments helper (ID, author name, avatar, likes, date)
 async function getVideoComments(videoId) {
   try {
     const data = await ytFetch('commentThreads', {
       part: 'snippet',
       videoId: videoId,
-      maxResults: '20',
+      maxResults: '30', // Pull up to 30 comments per video
       order: 'relevance',
       textFormat: 'plainText',
     });
-    return (data.items || []).map(item => item.snippet.topLevelComment.snippet.textDisplay);
+    return (data.items || []).map(item => {
+      const c = item.snippet.topLevelComment.snippet;
+      return {
+        commentId: item.snippet.topLevelComment.id,
+        authorName: c.authorDisplayName,
+        authorAvatar: c.authorProfileImageUrl,
+        content: c.textDisplay,
+        likeCount: parseInt(c.likeCount || 0),
+        publishedAt: c.publishedAt
+      };
+    });
   } catch (e) {
     console.warn(`Failed comments for ${videoId}:`, e);
     return [];
+  }
+}
+
+// Save/Upsert comments to Supabase 'comments' table
+async function saveCommentsToDb(competitorId, videoId, commentsList) {
+  if (!commentsList || commentsList.length === 0) return;
+  
+  const records = commentsList.map(c => ({
+    video_id: videoId,
+    competitor_id: competitorId,
+    youtube_comment_id: c.commentId,
+    author_name: c.authorName,
+    author_avatar: c.authorAvatar,
+    content: c.content,
+    like_count: c.likeCount,
+    published_at: c.publishedAt,
+    sentiment: 'neutral'
+  }));
+  
+  try {
+    const { error } = await supabase
+      .from('comments')
+      .upsert(records, { onConflict: 'youtube_comment_id' });
+    if (error) {
+      console.warn('Failed to upsert comments to DB:', error.message);
+    }
+  } catch (err) {
+    console.error('Error saving comments:', err);
   }
 }
 
@@ -673,7 +717,12 @@ export async function runChannelAnalysisPipeline(competitorId, channelId, onProg
       // Fetch comments from YouTube
       const commentsList = vid.comments_count > 0 ? await getVideoComments(vid.id) : [];
 
-      // Run AI Comments analysis
+      // Save rich comments to the comments table!
+      if (commentsList.length > 0) {
+        await saveCommentsToDb(competitorId, savedVideo.id, commentsList);
+      }
+
+      // Run AI Comments analysis using comment content strings
       let analysis = {
         pain_points: [],
         missing_concepts: [],
@@ -685,7 +734,7 @@ export async function runChannelAnalysisPipeline(competitorId, channelId, onProg
       };
 
       if (commentsList.length > 0) {
-        analysis = await analyzeCommentsWithAI(vid.title, commentsList);
+        analysis = await analyzeCommentsWithAI(vid.title, commentsList.map(c => c.content));
       }
 
       // Save insights to DB

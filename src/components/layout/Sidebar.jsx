@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Sparkles,
   X,
+  MessageSquare,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
@@ -14,6 +15,7 @@ import { useTheme } from '../../context/ThemeContext';
 const navItems = [
   { id: 'nav-dashboard', label: 'لوحة التحكم', path: '/', icon: LayoutDashboard },
   { id: 'nav-competitors', label: 'تحليل المنافسين', path: '/competitors', icon: Users },
+  { id: 'nav-comments', label: 'تعليقات الطلاب', path: '/comments', icon: MessageSquare },
   { id: 'nav-ai-reports', label: 'تقارير AI', path: '/ai-reports', icon: BrainCircuit },
 ];
 
