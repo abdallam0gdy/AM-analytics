@@ -23,6 +23,33 @@ function getAvatarColor(name) {
   return colors[index];
 }
 
+const localTrendingFallback = [
+  {
+    id: 'mock-trend-1',
+    title: 'كورس البرمجة والذكاء الاصطناعي - الصف الأول الثانوي | ترم أول 2026',
+    competitorName: 'المهندس كمال المرادي',
+    views: 45000,
+    published_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    url: 'https://youtube.com'
+  },
+  {
+    id: 'mock-trend-2',
+    title: 'شرح لغة بايثون Python في ساعة واحدة فقط! أولى ثانوي 2026',
+    competitorName: 'الخبير في التكنولوجيا',
+    views: 18000,
+    published_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    url: 'https://youtube.com'
+  },
+  {
+    id: 'mock-trend-3',
+    title: 'المراجعة النهائية ليلة الامتحان - مادة البرمجة والذكاء الاصطناعي',
+    competitorName: 'مستر أحمد حسن',
+    views: 12500,
+    published_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    url: 'https://youtube.com'
+  }
+];
+
 export default function Overview() {
   // Pipeline State
   const [pipelineState, setPipelineState] = useState({ active: false, status: '', message: '', logs: [] });
@@ -49,6 +76,36 @@ export default function Overview() {
 
   // 3. Fetch Competitors
   const { data: competitors, refetch: refetchCompetitors } = useSupabaseData('active_competitors', {}, localCompetitors);
+
+  // 4. Fetch Videos to calculate trends/viral alerts
+  const { data: dbVideos } = useSupabaseData('videos', {
+    select: '*, competitor:competitors(name)',
+    orderBy: { column: 'views', ascending: false }
+  }, []);
+
+  const calculateViralVideos = () => {
+    // If Supabase returned videos, use them; otherwise use local fallback
+    const sourceVideos = dbVideos && dbVideos.length > 0 ? dbVideos : localTrendingFallback;
+    const now = new Date();
+    
+    return sourceVideos.map(v => {
+      const daysElapsed = Math.max(1, Math.round((now - new Date(v.published_at)) / (1000 * 60 * 60 * 24)));
+      const viewsPerDay = Math.round(v.views / daysElapsed);
+      const competitorName = v.competitor?.name || v.competitorName || 'مدرس غير محدد';
+      
+      return {
+        ...v,
+        daysElapsed,
+        viewsPerDay,
+        competitorName
+      };
+    })
+    // Sort by highest velocity (views per day)
+    .sort((a, b) => b.viewsPerDay - a.viewsPerDay)
+    .slice(0, 3); // Take top 3 trending videos
+  };
+
+  const viralVideos = calculateViralVideos();
 
   // Trigger browser pipeline
   const handleRunRadar = async () => {
@@ -329,6 +386,74 @@ export default function Overview() {
           <div className="mt-3.5 h-1 w-full bg-surface-container rounded-full overflow-hidden">
             <div className="h-full bg-primary w-4/5"></div>
           </div>
+        </div>
+      </div>
+
+      {/* 📡 Competitor Trend Radar (فيديوهات رائجة وانتشار سريع) */}
+      <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 dark:border-border-dark shadow-sm">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 bg-red-500/10 text-red-600 rounded-lg shrink-0 animate-pulse">
+              <Zap size={18} />
+            </span>
+            <div>
+              <h2 className="text-base font-bold text-on-surface">رادار الفيديوهات الأكثر رواجاً (Competitor Trend Alerts) 📡🔥</h2>
+              <p className="text-xs text-on-surface-variant">الفيديوهات التي تحقق معدل مشاهدات يومي مرتفع جداً مقارنة بتاريخ نشرها</p>
+            </div>
+          </div>
+          <span className="text-[10px] font-bold text-red-600 bg-red-500/10 px-2 py-0.5 rounded-full">تحديث فوري</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {viralVideos.map((video) => {
+            // Determine badge style
+            let badgeText = 'رواج متصاعد 📈';
+            let badgeClass = 'bg-blue-500/10 text-blue-600 dark:text-blue-400';
+            if (video.viewsPerDay >= 4000) {
+              badgeText = 'انتشار فائق 🔥';
+              badgeClass = 'bg-red-500/10 text-red-600 dark:text-red-400';
+            } else if (video.viewsPerDay >= 1500) {
+              badgeText = 'نمو سريع جداً ⚡';
+              badgeClass = 'bg-amber-500/10 text-amber-600 dark:text-amber-400';
+            }
+
+            return (
+              <div 
+                key={video.id}
+                className="p-4 rounded-xl border border-outline-variant/20 bg-surface-container-low hover:border-red-500/40 transition-colors flex flex-col justify-between gap-3 group"
+              >
+                <div>
+                  <div className="flex justify-between items-start gap-2 mb-2">
+                    <span className="text-[10px] text-on-surface-variant/80 font-bold">👤 {video.competitorName}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold shrink-0 ${badgeClass}`}>
+                      {badgeText}
+                    </span>
+                  </div>
+
+                  <a 
+                    href={video.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="font-bold text-xs text-on-surface group-hover:text-primary transition-colors line-clamp-2 leading-relaxed flex items-start gap-1"
+                  >
+                    <span>{video.title}</span>
+                    <ExternalLink size={12} className="shrink-0 mt-0.5 opacity-40 group-hover:opacity-100 transition-opacity" />
+                  </a>
+                </div>
+
+                <div className="border-t border-outline-variant/10 pt-3">
+                  <div className="flex items-center justify-between text-[10px] text-on-surface-variant font-mono mb-2">
+                    <span>🎬 {video.views.toLocaleString('ar-EG')} مشاهدة</span>
+                    <span>📅 منذ {video.daysElapsed} أيام</span>
+                  </div>
+                  
+                  <div className="p-2 rounded-lg bg-surface-container-lowest border border-outline-variant/10 text-[10px] text-on-surface-variant leading-relaxed">
+                    حقق هذا الفيديو رواجاً في وقت قياسي بمعدل <span className="font-bold text-red-600 dark:text-red-400 font-mono">{(video.viewsPerDay).toLocaleString('ar-EG')}</span> مشاهدة يومياً!
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
