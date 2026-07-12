@@ -11,11 +11,10 @@ const MODELS = [
 ];
 const YT_BASE = 'https://www.googleapis.com/youtube/v3';
 
-// Search terms for the radar
+// Search terms for the radar (covering both 1st and 2nd Secondary Grades)
 const SEARCH_QUERIES = [
   'شرح برمجة أولى ثانوي 2026',
   'برمجة وذكاء اصطناعي أولى ثانوي',
-  'مراجعة برمجة أولى ثانوي',
   'منهج البرمجة الصف الأول الثانوي',
   'QUREO أولى ثانوي',
   'مستر السقا برمجة أولى ثانوي',
@@ -284,8 +283,9 @@ export async function runFrontendPipeline(onProgress = () => {}) {
 
       try {
         const relevance = await checkVideoRelevance(video.title, video.description, video.channelTitle);
+        const isRelevant = relevance.is_relevant === true || String(relevance.is_relevant).toLowerCase() === 'true';
         
-        if (relevance.is_relevant && relevance.confidence >= 0.6) {
+        if (isRelevant && relevance.confidence >= 0.6) {
           relevantCount++;
           
           // Ensure competitor exists in DB
