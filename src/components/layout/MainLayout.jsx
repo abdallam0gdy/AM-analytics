@@ -1,6 +1,6 @@
 import { Outlet, NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import { LayoutDashboard, Users, BrainCircuit } from 'lucide-react';
+import { LayoutDashboard, Users, BrainCircuit, MessageSquare } from 'lucide-react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
@@ -33,34 +33,44 @@ export default function MainLayout() {
       </div>
 
       {/* Mobile Bottom Navigation Bar (Stitch design) */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface-container-lowest/90 backdrop-blur-md shadow-[0_-1px_10px_rgba(0,0,0,0.05)] border-t border-outline-variant/30 dark:border-border-dark/50 px-6 py-2 flex items-center justify-between">
-        <NavLink to="/" end className={({ isActive }) => `flex flex-col items-center gap-1 group w-20`}>
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface-container-lowest/90 backdrop-blur-md shadow-[0_-1px_10px_rgba(0,0,0,0.05)] border-t border-outline-variant/30 dark:border-border-dark/50 px-4 py-2 flex items-center justify-between">
+        <NavLink to="/" end className={({ isActive }) => `flex flex-col items-center gap-1 group w-16`}>
           {({ isActive }) => (
             <>
-              <div className={`px-5 py-1.5 rounded-full mb-0.5 transition-all ${isActive ? 'bg-primary-container/20 text-primary' : 'text-on-surface-variant group-hover:bg-surface-container'}`}>
-                <LayoutDashboard size={20} />
+              <div className={`px-4 py-1.5 rounded-full mb-0.5 transition-all ${isActive ? 'bg-primary-container/20 text-primary' : 'text-on-surface-variant group-hover:bg-surface-container'}`}>
+                <LayoutDashboard size={18} />
               </div>
-              <span className={`text-[11px] font-bold ${isActive ? 'text-primary' : 'text-on-surface-variant'}`}>الرئيسية</span>
+              <span className={`text-[10px] font-bold ${isActive ? 'text-primary' : 'text-on-surface-variant'}`}>الرئيسية</span>
             </>
           )}
         </NavLink>
-        <NavLink to="/competitors" className={({ isActive }) => `flex flex-col items-center gap-1 group w-20`}>
+        <NavLink to="/competitors" className={({ isActive }) => `flex flex-col items-center gap-1 group w-16`}>
           {({ isActive }) => (
             <>
-              <div className={`px-5 py-1.5 rounded-full mb-0.5 transition-all ${isActive ? 'bg-primary-container/20 text-primary' : 'text-on-surface-variant group-hover:bg-surface-container'}`}>
-                <Users size={20} />
+              <div className={`px-4 py-1.5 rounded-full mb-0.5 transition-all ${isActive ? 'bg-primary-container/20 text-primary' : 'text-on-surface-variant group-hover:bg-surface-container'}`}>
+                <Users size={18} />
               </div>
-              <span className={`text-[11px] font-bold ${isActive ? 'text-primary' : 'text-on-surface-variant'}`}>المنافسون</span>
+              <span className={`text-[10px] font-bold ${isActive ? 'text-primary' : 'text-on-surface-variant'}`}>المنافسون</span>
             </>
           )}
         </NavLink>
-        <NavLink to="/ai-reports" className={({ isActive }) => `flex flex-col items-center gap-1 group w-20`}>
+        <NavLink to="/comments" className={({ isActive }) => `flex flex-col items-center gap-1 group w-16`}>
           {({ isActive }) => (
             <>
-              <div className={`px-5 py-1.5 rounded-full mb-0.5 transition-all ${isActive ? 'bg-primary-container/20 text-primary' : 'text-on-surface-variant group-hover:bg-surface-container'}`}>
-                <BrainCircuit size={20} />
+              <div className={`px-4 py-1.5 rounded-full mb-0.5 transition-all ${isActive ? 'bg-primary-container/20 text-primary' : 'text-on-surface-variant group-hover:bg-surface-container'}`}>
+                <MessageSquare size={18} />
               </div>
-              <span className={`text-[11px] font-bold ${isActive ? 'text-primary' : 'text-on-surface-variant'}`}>تقارير AI</span>
+              <span className={`text-[10px] font-bold ${isActive ? 'text-primary' : 'text-on-surface-variant'}`}>التعليقات</span>
+            </>
+          )}
+        </NavLink>
+        <NavLink to="/ai-reports" className={({ isActive }) => `flex flex-col items-center gap-1 group w-16`}>
+          {({ isActive }) => (
+            <>
+              <div className={`px-4 py-1.5 rounded-full mb-0.5 transition-all ${isActive ? 'bg-primary-container/20 text-primary' : 'text-on-surface-variant group-hover:bg-surface-container'}`}>
+                <BrainCircuit size={18} />
+              </div>
+              <span className={`text-[10px] font-bold ${isActive ? 'text-primary' : 'text-on-surface-variant'}`}>تقارير AI</span>
             </>
           )}
         </NavLink>
