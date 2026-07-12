@@ -70,6 +70,7 @@ export default function Comments() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sentimentFilter, setSentimentFilter] = useState('all'); // 'all' | 'positive' | 'negative' | 'neutral'
   const [competitorFilter, setCompetitorFilter] = useState('all');
+  const [videoFilter, setVideoFilter] = useState('all');
   
   // AI Script Modal States
   const [activeScript, setActiveScript] = useState(null);
@@ -105,14 +106,22 @@ export default function Comments() {
   // Unique competitor names for filter dropdown
   const competitorNames = [...new Set(comments.map(c => c.competitorName))];
 
+  // Unique video options filtered by selected competitor
+  const videoOptions = [...new Set(
+    comments
+      .filter(c => competitorFilter === 'all' ? true : c.competitorName === competitorFilter)
+      .map(c => c.videoTitle)
+  )];
+
   // Filtering logic
   const filteredComments = comments.filter(c => {
     const textMatches = (c.content || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                         (c.author_name || '').toLowerCase().includes(searchQuery.toLowerCase());
     const sentimentMatches = sentimentFilter === 'all' ? true : c.sentiment === sentimentFilter;
     const competitorMatches = competitorFilter === 'all' ? true : c.competitorName === competitorFilter;
+    const videoMatches = videoFilter === 'all' ? true : c.videoTitle === videoFilter;
     
-    return textMatches && sentimentMatches && competitorMatches;
+    return textMatches && sentimentMatches && competitorMatches && videoMatches;
   });
 
   // Stats
@@ -285,14 +294,14 @@ export default function Comments() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-wrap gap-2.5 items-center">
           {/* Sentiment Filter */}
           <div className="flex items-center gap-1.5">
             <Filter size={12} className="text-on-surface-variant/60" />
             <select
               value={sentimentFilter}
               onChange={(e) => setSentimentFilter(e.target.value)}
-              className="px-3 py-2 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none"
+              className="px-3 py-2 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none cursor-pointer"
             >
               <option value="all">كل المشاعر</option>
               <option value="positive">إيجابي فقط</option>
@@ -304,14 +313,34 @@ export default function Comments() {
           {/* Competitor Filter */}
           <select
             value={competitorFilter}
-            onChange={(e) => setCompetitorFilter(e.target.value)}
-            className="px-3 py-2 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none"
+            onChange={(e) => {
+              setCompetitorFilter(e.target.value);
+              setVideoFilter('all');
+            }}
+            className="px-3 py-2 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none cursor-pointer"
           >
             <option value="all">كل المدرسين</option>
             {competitorNames.map((name, idx) => (
               <option key={idx} value={name}>{name}</option>
             ))}
           </select>
+
+          {/* Video Filter */}
+          <div className="flex items-center gap-1.5">
+            <Play size={12} className="text-on-surface-variant/60" />
+            <select
+              value={videoFilter}
+              onChange={(e) => setVideoFilter(e.target.value)}
+              className="px-3 py-2 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none max-w-[160px] sm:max-w-[240px] truncate cursor-pointer"
+            >
+              <option value="all">كل الفيديوهات</option>
+              {videoOptions.map((title, idx) => (
+                <option key={idx} value={title}>
+                  {title.length > 40 ? title.substring(0, 40) + '...' : title}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
