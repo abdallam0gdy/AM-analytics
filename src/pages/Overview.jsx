@@ -116,48 +116,153 @@ export default function Overview() {
         )}
       </div>
 
-      {/* Pipeline Status Drawer/Card */}
+      {/* Premium Active Data Pipeline Logger & Stepper */}
       {pipelineState.active && (
-        <div className="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/30 dark:border-border-dark shadow-sm animate-scale-in">
-          <div className="flex items-center justify-between border-b border-border-light dark:border-border-dark/50 pb-2.5 mb-2.5">
-            <div className="flex items-center gap-2">
-              <Sparkles size={16} className="text-primary animate-pulse" />
-              <h3 className="text-xs font-bold text-on-surface">
-                مسار البيانات النشط (رادار يوتيوب والذكاء الاصطناعي)
-              </h3>
+        <div className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/30 shadow-md animate-scale-in text-on-surface">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-outline-variant/20 pb-4 mb-6">
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-3 w-3">
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${pipelineState.status === 'completed' ? 'bg-emerald-400' : pipelineState.status === 'failed' ? 'bg-red-400' : 'bg-primary'}`}></span>
+                <span className={`relative inline-flex rounded-full h-3 w-3 ${pipelineState.status === 'completed' ? 'bg-emerald-500' : pipelineState.status === 'failed' ? 'bg-red-500' : 'bg-primary'}`}></span>
+              </span>
+              <div>
+                <h3 className="font-headline text-sm font-bold">رادار يوتيوب والذكاء الاصطناعي النشط</h3>
+                <p className="text-[10px] text-on-surface-variant font-medium mt-0.5">تحديث مباشر لمسار البيانات والتحقق من صلة المحتوى بالمنهج التعليمي</p>
+              </div>
             </div>
+            
             {(pipelineState.status === 'completed' || pipelineState.status === 'failed') && (
               <button
                 onClick={() => setPipelineState({ active: false, status: '', message: '', logs: [] })}
-                className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary dark:text-primary-light hover:bg-primary/20 transition-all"
+                className="text-[10px] font-bold px-3 py-1.5 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-all cursor-pointer"
               >
-                إغلاق النافذة
+                إغلاق الرادار
               </button>
             )}
           </div>
 
-          <div className="flex items-start gap-2.5">
-            {pipelineState.status === 'completed' ? (
-              <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 shrink-0"><Check size={16} /></div>
-            ) : pipelineState.status === 'failed' ? (
-              <div className="p-1.5 rounded-lg bg-red-500/10 text-red-500 shrink-0"><AlertCircle size={16} /></div>
-            ) : (
-              <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0"><Loader2 size={16} className="animate-spin" /></div>
-            )}
+          {/* Stepper Workflow */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 relative">
+            {/* Step 1 */}
+            <div className="flex items-center md:flex-col gap-3 text-right md:text-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border transition-all ${
+                pipelineState.status === 'failed' ? 'border-red-500 bg-red-500/10 text-red-500' :
+                pipelineState.status === 'completed' || ['gatekeeper', 'analyze'].includes(pipelineState.status)
+                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500'
+                  : 'border-primary bg-primary/10 text-primary animate-pulse'
+              }`}>
+                📡
+              </div>
+              <div>
+                <p className="text-xs font-bold">فحص قنوات يوتيوب</p>
+                <p className="text-[9px] text-on-surface-variant">البحث عبر RSS و API</p>
+              </div>
+            </div>
 
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-on-surface">
-                {pipelineState.message}
-              </p>
+            {/* Step 2 */}
+            <div className="flex items-center md:flex-col gap-3 text-right md:text-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border transition-all ${
+                pipelineState.status === 'failed' ? 'border-red-500 bg-red-500/10 text-red-500' :
+                pipelineState.status === 'completed' || ['analyze'].includes(pipelineState.status)
+                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500'
+                  : pipelineState.status === 'gatekeeper'
+                  ? 'border-primary bg-primary/10 text-primary animate-pulse'
+                  : 'border-outline-variant bg-surface-container text-on-surface-variant opacity-60'
+              }`}>
+                🛡️
+              </div>
+              <div>
+                <p className="text-xs font-bold">فلترة صلة المنهج</p>
+                <p className="text-[9px] text-on-surface-variant">التحقق بالذكاء الاصطناعي</p>
+              </div>
+            </div>
 
-              {/* Mini Log Console */}
-              <div className="mt-2.5 p-2.5 rounded-lg bg-surface-container-low border border-outline-variant/30 dark:border-border-dark font-mono text-[9px] text-on-surface-variant h-20 overflow-y-auto flex flex-col-reverse gap-1">
-                {pipelineState.logs.slice().reverse().map((logMsg, i) => (
-                  <div key={i} className="flex gap-2">
-                    <span className="text-primary shrink-0">➜</span>
+            {/* Step 3 */}
+            <div className="flex items-center md:flex-col gap-3 text-right md:text-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border transition-all ${
+                pipelineState.status === 'failed' ? 'border-red-500 bg-red-500/10 text-red-500' :
+                pipelineState.status === 'completed'
+                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500'
+                  : pipelineState.status === 'analyze'
+                  ? 'border-primary bg-primary/10 text-primary animate-pulse'
+                  : 'border-outline-variant bg-surface-container text-on-surface-variant opacity-60'
+              }`}>
+                🧠
+              </div>
+              <div>
+                <p className="text-xs font-bold">تحليل تعليقات الطلاب</p>
+                <p className="text-[9px] text-on-surface-variant">استخراج نقاط الفهم والألم</p>
+              </div>
+            </div>
+
+            {/* Step 4 */}
+            <div className="flex items-center md:flex-col gap-3 text-right md:text-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border transition-all ${
+                pipelineState.status === 'failed' ? 'border-red-500 bg-red-500/10 text-red-500' :
+                pipelineState.status === 'completed'
+                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500'
+                  : 'border-outline-variant bg-surface-container text-on-surface-variant opacity-60'
+              }`}>
+                💾
+              </div>
+              <div>
+                <p className="text-xs font-bold">مزامنة قاعدة البيانات</p>
+                <p className="text-[9px] text-on-surface-variant">حفظ وإتاحة النتائج للوحة</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mb-6 space-y-1.5">
+            <div className="flex justify-between text-[10px] font-bold text-on-surface-variant">
+              <span>نسبة تقدم التحديث</span>
+              <span className="font-mono">
+                {pipelineState.status === 'completed' ? '100%' :
+                 pipelineState.status === 'failed' ? '100%' :
+                 pipelineState.status === 'analyze' ? '80%' :
+                 pipelineState.status === 'gatekeeper' ? '50%' : '20%'}
+              </span>
+            </div>
+            <div className="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-500 rounded-full ${
+                  pipelineState.status === 'completed' ? 'bg-emerald-500' :
+                  pipelineState.status === 'failed' ? 'bg-red-500' : 'bg-primary'
+                }`}
+                style={{ 
+                  width: pipelineState.status === 'completed' ? '100%' :
+                         pipelineState.status === 'failed' ? '100%' :
+                         pipelineState.status === 'analyze' ? '80%' :
+                         pipelineState.status === 'gatekeeper' ? '50%' : '20%' 
+                }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Status Message & Console logs */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 p-3 bg-surface-container rounded-xl border border-outline-variant/10 text-xs">
+              <span className="text-primary font-bold">الحالة الحالية:</span>
+              <span className="text-on-surface-variant font-medium">{pipelineState.message}</span>
+            </div>
+
+            {/* Terminal Style logs box */}
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-bold text-on-surface-variant">سجل العمليات الحية (Terminal Logs):</span>
+              <div className="bg-slate-950 text-emerald-400 font-mono text-xs rounded-xl p-4 border border-slate-800 h-36 overflow-y-auto flex flex-col gap-1.5 scrollbar-thin scrollbar-thumb-slate-800">
+                {pipelineState.logs.map((logMsg, i) => (
+                  <div key={i} className="flex gap-2 items-start leading-relaxed">
+                    <span className="text-primary shrink-0 font-bold select-none">➜</span>
                     <span>{logMsg}</span>
                   </div>
                 ))}
+                {pipelineState.status !== 'completed' && pipelineState.status !== 'failed' && (
+                  <div className="flex gap-1 items-center text-primary animate-pulse text-[10px]">
+                    <span className="w-1.5 h-3 bg-primary inline-block"></span>
+                    <span>جاري رصد الفيديوهات والتعليقات...</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
