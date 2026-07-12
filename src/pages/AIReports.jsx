@@ -3,9 +3,8 @@ import {
   BrainCircuit, Send, Loader2, AlertCircle, Lightbulb,
   Target, MessageSquare, Star, Sparkles, BookOpen,
 } from 'lucide-react';
-import { analyzeVideo, analyzeChannel, generateContentIdeas, isGeminiConfigured } from '../lib/gemini';
+import { analyzeVideo, generateContentIdeas, isGeminiConfigured } from '../lib/gemini';
 import { realCompetitors as localCompetitors } from '../data/mockData';
-import { supabase } from '../lib/supabase';
 import { useSupabaseData } from '../hooks/useSupabase';
 import { parseCompetitor } from './Competitors';
 
@@ -21,17 +20,19 @@ function ResultSection({ title, icon: Icon, items, color = 'primary' }) {
   };
 
   return (
-    <div className="p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
-      <h4 className={`text-sm font-bold mb-3 flex items-center gap-2 ${colorClasses[color].split(' ').slice(0, 2).join(' ')}`}>
+    <div className="p-5 rounded-2xl border border-outline-variant/30 bg-surface-container-lowest text-on-surface">
+      <h4 className={`text-xs font-bold mb-3.5 flex items-center gap-2 ${colorClasses[color].split(' ').slice(0, 2).join(' ')}`}>
         <div className={`p-1.5 rounded-lg ${colorClasses[color]}`}>
-          <Icon size={15} />
+          <Icon size={14} />
         </div>
         {title}
       </h4>
       <div className="space-y-2">
         {items.map((item, i) => (
-          <div key={i} className="flex items-start gap-2 text-[13px] text-text-secondary-light dark:text-text-secondary-dark">
-            <span className="text-text-secondary-light/30 dark:text-text-secondary-dark/30 mt-0.5 font-mono text-xs">{String(i + 1).padStart(2, '0')}</span>
+          <div key={i} className="flex items-start gap-2.5 text-xs text-on-surface-variant leading-relaxed">
+            <span className="text-primary font-mono text-[10px] bg-primary/5 px-1.5 py-0.5 rounded-md font-bold mt-0.5">
+              {String(i + 1).padStart(2, '0')}
+            </span>
             <span>{item}</span>
           </div>
         ))}
@@ -41,49 +42,16 @@ function ResultSection({ title, icon: Icon, items, color = 'primary' }) {
 }
 
 export default function AIReports() {
-  const [mode, setMode] = useState('video'); // 'video' | 'channel' | 'ideas'
+  const [mode, setMode] = useState('ideas'); // Default to the most useful tool: 'ideas'
   const [videoTitle, setVideoTitle] = useState('');
   const [videoDesc, setVideoDesc] = useState('');
   const [comments, setComments] = useState('');
-  const [selectedChannel, setSelectedChannel] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   // Load competitors from Supabase with local fallback
   const { data: competitors } = useSupabaseData('competitors', { orderBy: { column: 'subscriber_count', ascending: false } }, localCompetitors);
-
-  // Helper to save analysis results (strengths & weaknesses) to Supabase
-  const updateCompetitorInsights = async (competitorId, currentDescription, strengths, weaknesses) => {
-    try {
-      const { error: directError } = await supabase
-        .from('competitors')
-        .update({ strengths, weaknesses })
-        .eq('id', competitorId);
-      
-      if (directError && directError.message && (directError.message.includes('column') || directError.message.includes('does not exist'))) {
-        // Fallback: description JSON workaround
-        let bioText = currentDescription || '';
-        if (bioText.trim().startsWith('{') && bioText.trim().endsWith('}')) {
-          try {
-            const parsed = JSON.parse(bioText);
-            bioText = parsed.bio || '';
-          } catch (e) {}
-        }
-        const encoded = JSON.stringify({
-          bio: bioText,
-          strengths: strengths || [],
-          weaknesses: weaknesses || []
-        });
-        await supabase
-          .from('competitors')
-          .update({ description: encoded })
-          .eq('id', competitorId);
-      }
-    } catch (err) {
-      console.error('Failed to update competitor insights:', err);
-    }
-  };
 
   const handleAnalyze = async () => {
     setLoading(true);
@@ -95,7 +63,7 @@ export default function AIReports() {
 
       if (mode === 'video') {
         if (!videoTitle.trim()) {
-          setError('اكتب عنوان الفيديو');
+          setError('يرجى كتابة عنوان الفيديو أولاً.');
           setLoading(false);
           return;
         }
@@ -104,27 +72,6 @@ export default function AIReports() {
           .map(c => c.trim())
           .filter(Boolean);
         data = await analyzeVideo(videoTitle, videoDesc, commentsArray);
-      } else if (mode === 'channel') {
-        const comp = (competitors || []).find(c => c.id === selectedChannel);
-        if (!comp) {
-          setError('اختر قناة منافسة');
-          setLoading(false);
-          return;
-        }
-        
-        // Fetch top 15 video titles from Supabase for this channel
-        const { data: compVideos } = await supabase
-          .from('videos')
-          .select('title')
-          .eq('competitor_id', comp.id)
-          .order('views', { ascending: false })
-          .limit(15);
-          
-        const videoTitles = (compVideos || []).map(v => v.title);
-        data = await analyzeChannel(comp.name, videoTitles);
-        
-        // Save the analysis results (strengths & weaknesses) back to Supabase
-        await updateCompetitorInsights(comp.id, comp.description, data.strengths, data.weaknesses);
       } else if (mode === 'ideas') {
         const competitorSummary = (competitors || []).map(c => {
           const parsed = parseCompetitor(c);
@@ -138,138 +85,116 @@ export default function AIReports() {
 
       setResult(data);
     } catch (err) {
-      setError(err.message || 'حصل خطأ غير متوقع');
+      setError(err.message || 'حصل خطأ غير متوقع أثناء معالجة البيانات.');
     } finally {
       setLoading(false);
     }
   };
 
   const modes = [
-    { id: 'video', label: 'تحليل فيديو', icon: '🎬' },
-    { id: 'channel', label: 'تحليل قناة', icon: '📺' },
-    { id: 'ideas', label: 'أفكار محتوى', icon: '💡' },
+    { id: 'ideas', label: 'أفكار محتوى ومناهج مضادة', icon: '💡', desc: 'توليد خطة فيديوهات جديدة تملأ فجوات المدرسين وتتغلب على نقاط ضعفهم' },
+    { id: 'video', label: 'تحليل فيديو مخصص', icon: '🎬', desc: 'تحليل فيديو تعليمي معين للتعرف على نقاط فهم الطلاب وما لم يعجبهم في الشرح' },
   ];
 
   return (
-    <div className="space-y-5 w-full">
+    <div className="space-y-6 w-full animate-fade-in text-on-surface">
       {/* Header */}
-      <div className="animate-fade-in">
-        <h2 className="text-xl font-extrabold text-text-primary-light dark:text-text-primary-dark flex items-center gap-2">
-          <BrainCircuit size={24} className="text-primary" />
-          تقارير الذكاء الاصطناعي
+      <div>
+        <h2 className="font-headline text-2xl font-extrabold text-on-background tracking-tight">
+          تقارير المنهج والذكاء الاصطناعي 🧠
         </h2>
-        <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark mt-0.5">
-          حلل المنافسين واستخرج فرص التحسين باستخدام Gemini AI
+        <p className="text-xs text-on-surface-variant max-w-2xl leading-relaxed mt-1">
+          استخدم الذكاء الاصطناعي لدمج بيانات المنافسين وتوليد محتوى تعليمي كاسح. اختر الاستراتيجية المناسبة لك للبدء فوراً.
         </p>
       </div>
 
       {/* API Status */}
       {!isGeminiConfigured && (
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 animate-slide-up">
-          <AlertCircle size={20} className="text-amber-500 shrink-0" />
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-on-surface">
+          <AlertCircle size={18} className="text-amber-600 shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
-              Gemini API غير متصل
+            <p className="text-xs font-bold text-amber-700">
+              مفتاح Gemini API غير متصل
             </p>
-            <p className="text-xs text-amber-600/70 dark:text-amber-400/60 mt-0.5">
-              أضف <code className="bg-amber-500/10 px-1.5 py-0.5 rounded font-mono text-[11px]">VITE_GEMINI_API_KEY</code> في ملف <code className="bg-amber-500/10 px-1.5 py-0.5 rounded font-mono text-[11px]">.env</code> ثم أعد تشغيل السيرفر
+            <p className="text-[10px] text-amber-600/80 mt-0.5 leading-relaxed">
+              يرجى إضافة <code className="bg-white/40 px-1 py-0.5 rounded font-mono text-[9px]">VITE_GEMINI_API_KEY</code> في ملف البيئة <code className="bg-white/40 px-1 py-0.5 rounded font-mono text-[9px]">.env</code> للحصول على كامل مزايا التحليل.
             </p>
           </div>
         </div>
       )}
 
-      {/* Mode Tabs */}
-      <div className="flex gap-2 animate-slide-up" style={{ animationDelay: '100ms' }}>
+      {/* Selector Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {modes.map((m) => (
           <button
             key={m.id}
             onClick={() => { setMode(m.id); setResult(null); setError(''); }}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${
+            className={`p-5 rounded-2xl border text-right transition-all flex items-start gap-4 hover:scale-[1.01] cursor-pointer ${
               mode === m.id
-                ? 'bg-gradient-to-l from-primary to-primary-container text-white shadow-lg shadow-primary/20'
-                : 'bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary-50 dark:hover:bg-surface-dark-hover'
+                ? 'border-primary bg-primary/5 shadow-sm'
+                : 'border-outline-variant/30 bg-surface-container-lowest hover:bg-surface-container-low/50'
             }`}
           >
-            <span>{m.icon}</span>
-            {m.label}
+            <div className={`p-2 rounded-xl text-lg ${mode === m.id ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant'}`}>
+              {m.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-xs font-bold text-on-surface">{m.label}</h4>
+              <p className="text-[10px] text-on-surface-variant mt-1 leading-relaxed">{m.desc}</p>
+            </div>
           </button>
         ))}
       </div>
 
-      {/* Input Form */}
-      <div
-        className="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-2xl p-5 card-shadow animate-slide-up"
-        style={{ animationDelay: '150ms' }}
-      >
+      {/* Input Form Card */}
+      <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-5 shadow-sm">
         {mode === 'video' && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-text-primary-light dark:text-text-primary-dark mb-1.5">
-                عنوان الفيديو *
+              <label className="block text-[11px] font-bold text-on-surface-variant mb-1.5">
+                عنوان الفيديو التعليمي *
               </label>
               <input
                 type="text"
                 value={videoTitle}
                 onChange={(e) => setVideoTitle(e.target.value)}
-                placeholder="مثال: شرح JavaScript للمبتدئين - أولى ثانوي 2026"
-                className="w-full px-4 py-2.5 rounded-xl bg-bg-light dark:bg-surface-dark-2 border border-border-light dark:border-border-dark text-sm text-text-primary-light dark:text-text-primary-dark placeholder:text-text-secondary-light/30 dark:placeholder:text-text-secondary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                placeholder="مثال: شرح لغة بايثون أولى ثانوي 2026"
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-text-primary-light dark:text-text-primary-dark mb-1.5">
+              <label className="block text-[11px] font-bold text-on-surface-variant mb-1.5">
                 وصف الفيديو (اختياري)
               </label>
               <textarea
                 value={videoDesc}
                 onChange={(e) => setVideoDesc(e.target.value)}
-                placeholder="ضع وصف الفيديو هنا..."
+                placeholder="تفاصيل الدرس التي كتبها المدرس في الوصف..."
                 rows={2}
-                className="w-full px-4 py-2.5 rounded-xl bg-bg-light dark:bg-surface-dark-2 border border-border-light dark:border-border-dark text-sm text-text-primary-light dark:text-text-primary-dark placeholder:text-text-secondary-light/30 dark:placeholder:text-text-secondary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all resize-none"
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-text-primary-light dark:text-text-primary-dark mb-1.5">
-                تعليقات الطلاب (اختياري - كل تعليق في سطر)
+              <label className="block text-[11px] font-bold text-on-surface-variant mb-1.5">
+                التعليقات اليدوية للطلاب (اختياري - كل تعليق في سطر مستقل)
               </label>
               <textarea
                 value={comments}
                 onChange={(e) => setComments(e.target.value)}
-                placeholder={"الشرح سريع محتاج أمثلة أكتر\nياريت تعملوا ملخص PDF\nالفيديو طويل أوي"}
-                rows={4}
-                className="w-full px-4 py-2.5 rounded-xl bg-bg-light dark:bg-surface-dark-2 border border-border-light dark:border-border-dark text-sm text-text-primary-light dark:text-text-primary-dark placeholder:text-text-secondary-light/30 dark:placeholder:text-text-secondary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all resize-none"
+                placeholder={"أنا مش فاهم الجزء ده يا مستر\nياريت تحل كود بايثون كامل"}
+                rows={3}
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
               />
             </div>
           </div>
         )}
 
-        {mode === 'channel' && (
-          <div>
-            <label className="block text-sm font-semibold text-text-primary-light dark:text-text-primary-dark mb-1.5">
-              اختر قناة منافسة للتحليل
-            </label>
-            <select
-              value={selectedChannel}
-              onChange={(e) => setSelectedChannel(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-bg-light dark:bg-surface-dark-2 border border-border-light dark:border-border-dark text-sm text-text-primary-light dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-            >
-              <option value="">-- اختر قناة --</option>
-              {(competitors || []).map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name.includes(' - ') ? c.name.split(' - ')[1] : c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
         {mode === 'ideas' && (
-          <div className="text-center py-4">
-            <Sparkles size={32} className="text-primary mx-auto mb-2" />
-            <p className="text-sm font-semibold text-text-primary-light dark:text-text-primary-dark">
-              توليد أفكار محتوى بناءً على تحليل جميع المنافسين
-            </p>
-            <p className="text-xs text-text-secondary-light/60 dark:text-text-secondary-dark/60 mt-1">
-              الذكاء الاصطناعي هيحلل نقاط ضعف المنافسين ويقترح فيديوهات تملأ الفجوات
+          <div className="text-center py-6 space-y-2">
+            <Sparkles size={32} className="text-primary mx-auto animate-pulse" />
+            <h4 className="text-xs font-bold">توليد استراتيجية الفيديوهات والمناهج الكاسحة</h4>
+            <p className="text-[10px] text-on-surface-variant max-w-lg mx-auto leading-relaxed">
+              سيقوم خبير الذكاء الاصطناعي بفحص جميع جوانب الضعف، والفجوات المنهجية التي تم رصدها لدى كافة المدرسين المنافسين، ويقترح لك قائمة بأفضل 5 مواضيع فيديوهات شرح لتصويرها مع الأولويات والمحاور المفقودة.
             </p>
           </div>
         )}
@@ -278,115 +203,107 @@ export default function AIReports() {
         <button
           onClick={handleAnalyze}
           disabled={loading || !isGeminiConfigured}
-          className="mt-4 w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-l from-primary to-primary-container shadow-lg shadow-primary/20 hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="mt-5 w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary/95 transition-all shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {loading ? (
-            <><Loader2 size={18} className="animate-spin" /> جاري التحليل...</>
+            <><Loader2 size={16} className="animate-spin" /> جاري التحليل وصياغة التقرير...</>
           ) : (
-            <><Send size={16} /> {mode === 'ideas' ? 'ولّد أفكار' : 'حلّل بالذكاء الاصطناعي'}</>
+            <><Send size={14} /> {mode === 'ideas' ? 'توليد أفكار المحتوى الآن' : 'بدء التحليل الفوري للفيديو'}</>
           )}
         </button>
       </div>
 
       {/* Error */}
       {error && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/5 dark:bg-red-500/10 border border-red-500/20 text-sm text-red-600 dark:text-red-400 font-semibold animate-scale-in">
-          <AlertCircle size={16} />
+        <div className="flex items-center gap-2 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-600 dark:text-red-400 font-bold animate-scale-in">
+          <AlertCircle size={14} />
           {error}
         </div>
       )}
 
-      {/* Results */}
+      {/* Results Section */}
       {result && (
-        <div className="space-y-3 animate-fade-in">
-          <h3 className="text-base font-bold text-text-primary-light dark:text-text-primary-dark flex items-center gap-2">
-            ✨ نتائج التحليل
+        <div className="space-y-5 animate-fade-in border-t border-outline-variant/20 pt-6">
+          <h3 className="font-headline text-sm font-bold text-on-surface flex items-center gap-2">
+            ✨ مسودة تقرير التحليل النهائي:
           </h3>
 
           {/* Summary */}
           {result.summary && (
-            <div className="p-4 rounded-xl bg-gradient-to-l from-primary/5 to-primary-container/5 dark:from-primary/10 dark:to-primary-container/10 border border-primary/10">
-              <p className="text-sm text-text-primary-light dark:text-text-primary-dark font-medium">
+            <div className="p-5 rounded-2xl bg-primary/5 border border-primary/10">
+              <p className="text-xs text-on-surface font-medium leading-relaxed">
                 {result.summary}
               </p>
               {result.engagement_score && (
-                <div className="flex items-center gap-2 mt-2">
-                  <Star size={16} className="text-accent-container" />
-                  <span className="text-sm font-bold text-accent-container">
-                    درجة التفاعل: {result.engagement_score}/10
-                  </span>
+                <div className="flex items-center gap-2 mt-3 text-xs font-bold text-primary">
+                  <Star size={14} className="fill-primary" />
+                  <span>معدل التفاعل المقدر: {result.engagement_score}/10</span>
                 </div>
               )}
             </div>
           )}
 
-          {/* Video Analysis Results */}
+          {/* Custom Video Analysis results */}
           {result.pain_points && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <ResultSection title="نقاط الضعف" icon={Target} items={result.pain_points} color="red" />
-              <ResultSection title="مفاهيم مفقودة" icon={BookOpen} items={result.missing_concepts} color="accent" />
-              <ResultSection title="طلبات الطلاب" icon={MessageSquare} items={result.student_requests} color="primary" />
-              <ResultSection title="توصيات التحسين" icon={Lightbulb} items={result.recommendations} color="emerald" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ResultSection title="نقاط الألم (صعوبات فهم الطلاب)" icon={Target} items={result.pain_points} color="red" />
+              <ResultSection title="المفاهيم المنهجية المفقودة بالشرح" icon={BookOpen} items={result.missing_concepts} color="accent" />
+              <ResultSection title="طلبات وتساؤلات الطلاب المحددة" icon={MessageSquare} items={result.student_requests} color="primary" />
+              <ResultSection title="توصيات AI لتقديم شرح أفضل" icon={Lightbulb} items={result.recommendations} color="emerald" />
             </div>
           )}
 
-          {/* Channel Analysis Results */}
-          {result.strengths && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <ResultSection title="نقاط القوة" icon={Lightbulb} items={result.strengths} color="emerald" />
-              <ResultSection title="نقاط الضعف" icon={Target} items={result.weaknesses} color="red" />
-              <ResultSection title="فجوات المحتوى" icon={BookOpen} items={result.content_gaps} color="accent" />
-              <ResultSection title="فرص لك" icon={Sparkles} items={result.opportunities} color="purple" />
-            </div>
-          )}
-
-          {/* Content Ideas Results */}
+          {/* Content Ideas strategy */}
           {result.content_ideas && (
-            <div className="space-y-2.5">
+            <div className="space-y-4">
               {result.content_strategy && (
-                <div className="p-4 rounded-xl bg-primary/5 dark:bg-primary/10 border border-primary/10">
-                  <p className="text-sm font-semibold text-primary dark:text-primary-light">💡 الاستراتيجية: {result.content_strategy}</p>
+                <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 text-xs leading-relaxed font-semibold">
+                  💡 استراتيجية المنافسة المقترحة: {result.content_strategy}
                 </div>
               )}
-              {result.content_ideas.map((idea, i) => (
-                <div
-                  key={i}
-                  className="p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark card-hover"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-[13px] font-bold text-text-primary-light dark:text-text-primary-dark">
-                        🎬 {idea.title}
-                      </p>
-                      <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark mt-1">
-                        {idea.description}
-                      </p>
+              
+              <div className="grid grid-cols-1 gap-4">
+                {result.content_ideas.map((idea, i) => (
+                  <div
+                    key={i}
+                    className="p-5 rounded-2xl border border-outline-variant/30 bg-surface-container-lowest hover:border-primary/45 transition-colors space-y-3"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-md mb-1 inline-block">فكرة {i + 1}</span>
+                        <h4 className="text-xs font-bold text-on-surface">🎬 {idea.title}</h4>
+                      </div>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold ${
+                        idea.priority === 'عالية'
+                          ? 'bg-red-500/10 text-red-600'
+                          : 'bg-amber-500/10 text-amber-600'
+                      }`}>
+                        أولوية {idea.priority}
+                      </span>
                     </div>
-                    <span className={`shrink-0 ms-3 px-2 py-1 rounded-lg text-[11px] font-bold ${
-                      idea.priority === 'عالية'
-                        ? 'bg-red-500/10 text-red-500'
-                        : idea.priority === 'متوسطة'
-                          ? 'bg-amber-500/10 text-amber-500'
-                          : 'bg-emerald-500/10 text-emerald-500'
-                    }`}>
-                      {idea.priority}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-primary/5 dark:bg-primary/10 text-primary dark:text-primary-light">
-                      {idea.target_grade}
-                    </span>
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-accent-container/5 dark:bg-accent-container/10 text-accent-container">
-                      {idea.topic}
-                    </span>
-                  </div>
-                  {idea.why && (
-                    <p className="text-[11px] text-text-secondary-light/60 dark:text-text-secondary-dark/60 mt-2">
-                      💬 {idea.why}
+
+                    <p className="text-xs text-on-surface-variant leading-relaxed">
+                      {idea.description}
                     </p>
-                  )}
-                </div>
-              ))}
+
+                    <div className="flex flex-wrap gap-2 text-[10px] font-bold">
+                      <span className="px-2 py-0.5 rounded-lg bg-surface-container text-on-surface-variant">
+                        🎓 {idea.target_grade}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-lg bg-surface-container text-on-surface-variant">
+                        🔑 {idea.topic}
+                      </span>
+                    </div>
+
+                    {idea.why && (
+                      <p className="text-[10px] text-on-surface-variant/80 border-t border-outline-variant/10 pt-2 flex items-center gap-1">
+                        <span>💬 لماذا هذا الفيديو؟</span>
+                        <span className="font-medium italic">"{idea.why}"</span>
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
