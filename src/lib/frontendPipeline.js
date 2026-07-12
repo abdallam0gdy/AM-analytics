@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { filterAndClassifyCommentsWithAI } from './gemini';
 
 const YOUTUBE_API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
@@ -469,7 +470,7 @@ async function getVideoComments(videoId) {
     const data = await ytFetch('commentThreads', {
       part: 'snippet',
       videoId: videoId,
-      maxResults: '30', // Pull up to 30 comments per video
+      maxResults: '50', // Pull up to 50 comments per video for better data collection
       order: 'relevance',
       textFormat: 'plainText',
     });
@@ -490,31 +491,53 @@ async function getVideoComments(videoId) {
   }
 }
 
-// Save/Upsert comments to Supabase 'comments' table
+// Save/Upsert comments to Supabase 'comments' table after AI Filtering
 async function saveCommentsToDb(competitorId, videoId, commentsList) {
   if (!commentsList || commentsList.length === 0) return;
   
-  const records = commentsList.map(c => ({
-    video_id: videoId,
-    competitor_id: competitorId,
-    youtube_comment_id: c.commentId,
-    author_name: c.authorName,
-    author_avatar: c.authorAvatar,
-    content: c.content,
-    like_count: c.likeCount,
-    published_at: c.publishedAt,
-    sentiment: 'neutral'
-  }));
-  
   try {
+    // 🧠 AI Spam Filter & Sentiment Classification
+    // Group and filter out emoji/spam (like c1: ❤️❤️), keep only useful ones with sentiment
+    const aiFiltered = await filterAndClassifyCommentsWithAI(commentsList);
+    
+    if (!aiFiltered || aiFiltered.length === 0) {
+      console.log(`[AI Comment Filter] All comments for video ${videoId} were filtered out as spam/emoji.`);
+      return;
+    }
+    
+    // Map of commentId -> sentiment
+    const sentimentMap = {};
+    aiFiltered.forEach(item => {
+      if (item.id) {
+        sentimentMap[item.id] = item.sentiment || 'neutral';
+      }
+    });
+    
+    // Keep only comments that passed the AI filter
+    const usefulComments = commentsList.filter(c => sentimentMap[c.commentId] !== undefined);
+    
+    if (usefulComments.length === 0) return;
+    
+    const records = usefulComments.map(c => ({
+      video_id: videoId,
+      competitor_id: competitorId,
+      youtube_comment_id: c.commentId,
+      author_name: c.authorName,
+      author_avatar: c.authorAvatar,
+      content: c.content,
+      like_count: c.likeCount,
+      published_at: c.publishedAt,
+      sentiment: sentimentMap[c.commentId]
+    }));
+    
     const { error } = await supabase
       .from('comments')
       .upsert(records, { onConflict: 'youtube_comment_id' });
     if (error) {
-      console.warn('Failed to upsert comments to DB:', error.message);
+      console.warn('Failed to upsert filtered comments to DB:', error.message);
     }
   } catch (err) {
-    console.error('Error saving comments:', err);
+    console.error('Error saving filtered comments:', err);
   }
 }
 

@@ -282,3 +282,51 @@ ${JSON.stringify(comments.map(c => ({ id: c.id, content: c.content })), null, 2)
 
   return await callGemini(prompt);
 }
+
+/**
+ * Filter out spam/emoji comments and classify sentiment of useful ones
+ */
+export async function filterAndClassifyCommentsWithAI(comments) {
+  if (!comments || comments.length === 0) return [];
+
+  const commentsPayload = comments.map(c => ({
+    id: c.commentId,
+    text: c.content
+  }));
+
+  const prompt = `أنت خبير في مراجعة وتصفية تعليقات الطلاب حول البرمجة.
+أمامك قائمة من التعليقات البرمجية المكتوبة على فيديوهات يوتيوب.
+مهمتك هي تصفية هذه القائمة لاستبعاد أي تعليق غير مفيد أو عديم القيمة (مثل: الرموز التعبيرية فقط مثل القلوب والوجوه التعبيرية ❤️👍🔥، الشكر والتحية العامة جداً دون تفصيل مثل "بالتوفيق يا مستر" أو "شكرا" أو "منور").
+نحن نريد فقط التعليقات ذات الفائدة والتأثير الفعلي (Actionable Comments) وهي:
+1. الأسئلة البرمجية والاستفسارات عن الفهم.
+2. الشكاوى وصعوبات التعلم (نقاط الألم - Pain points).
+3. طلبات الشرح أو حل الأكواد أو رفع ملفات معينة.
+4. تعليقات الشكر والتقييم المفصلة التي تذكر سبب التميز (مثل: "الشرح ده فادني جدا في فهم المصفوفات").
+
+لكل تعليق محتفظ به، صنّف مشاعره بدقة كالتالي:
+- 'positive': لتعليقات الشكر والثناء المفصلة التي تعبر عن فهم كامل.
+- 'negative': للأسئلة عن نقاط صعبة، أو عدم الفهم، أو الشكوى.
+- 'neutral': للاستفسارات العامة والطلبات المحايدة.
+
+التعليقات المطلوب تصفيتها:
+${JSON.stringify(commentsPayload, null, 2)}
+
+أجب بصيغة JSON فقط كقائمة من التعليقات المفيدة المحتفظ بها فقط مع مشاعرها:
+[
+  {
+    "id": "معرّف التعليق هنا",
+    "sentiment": "positive" أو "negative" أو "neutral"
+  }
+]`;
+
+  try {
+    const results = await callGemini(prompt);
+    if (results && Array.isArray(results)) {
+      return results;
+    }
+    return [];
+  } catch (err) {
+    console.error('Error filtering comments with AI:', err);
+    return [];
+  }
+}
