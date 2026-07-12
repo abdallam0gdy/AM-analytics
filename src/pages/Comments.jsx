@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { 
   MessageSquare, Search, Filter, ExternalLink, ThumbsUp, 
-  Sparkles, ChevronLeft, Calendar, BrainCircuit, Play, Smile
+  Sparkles, ChevronLeft, Calendar, BrainCircuit, Play, Smile, Loader2
 } from 'lucide-react';
 import { useSupabaseData } from '../hooks/useSupabase';
-import { generateShortVideoScript } from '../lib/gemini';
+import { generateShortVideoScript, analyzeCommentsSentimentBatch } from '../lib/gemini';
+import { supabase } from '../lib/supabase';
 
 // Helper to assign consistent avatar colors based on name string
 function getAvatarColor(name) {
@@ -74,8 +75,12 @@ export default function Comments() {
   const [activeScript, setActiveScript] = useState(null);
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
 
+  // Sentiment Batch Scan States
+  const [isScanningSentiment, setIsScanningSentiment] = useState(false);
+  const [scanProgress, setScanProgress] = useState('');
+
   // Load comments, competitors from Supabase
-  const { data: rawComments } = useSupabaseData('comments', {
+  const { data: rawComments, refetch: refetchComments } = useSupabaseData('comments', {
     select: '*, video:videos(title, url), competitor:competitors(name)',
     orderBy: { column: 'published_at', ascending: false }
   }, localCommentsFallback);
@@ -116,6 +121,51 @@ export default function Comments() {
   const positiveCommentsCount = comments.filter(c => c.sentiment === 'positive').length;
   const positiveRatio = totalCommentsCount > 0 ? Math.round((positiveCommentsCount / totalCommentsCount) * 100) : 100;
 
+  // Batch scan unclassified comments
+  const handleScanNeutralComments = async () => {
+    // Filter neutral or empty sentiments
+    const neutralComments = comments.filter(c => c.sentiment === 'neutral' || !c.sentiment);
+    
+    if (neutralComments.length === 0) {
+      alert('جميع تعليقات الطلاب الحالية مصنفة ومحللة بالفعل ولا يوجد تعليقات محايدة لتصنيفها!');
+      return;
+    }
+
+    setIsScanningSentiment(true);
+    setScanProgress(`🔍 تم رصد ${neutralComments.length} تعليق غير مصنف. جاري تشغيل خبير المشاعر بالـ AI...`);
+
+    try {
+      // Process in batches of 10 to protect rate limits and prevent oversized payloads
+      const batchSize = 10;
+      for (let i = 0; i < neutralComments.length; i += batchSize) {
+        const batch = neutralComments.slice(i, i + batchSize);
+        setScanProgress(`🧠 تحليل وتصنيف دفعة التعليقات (${Math.min(i + batchSize, neutralComments.length)} من أصل ${neutralComments.length})...`);
+        
+        const results = await analyzeCommentsSentimentBatch(batch);
+        if (results && Array.isArray(results)) {
+          await Promise.all(results.map(async (res) => {
+            if (res.id && res.sentiment) {
+              await supabase
+                .from('comments')
+                .update({ sentiment: res.sentiment })
+                .eq('id', res.id);
+            }
+          }));
+        }
+      }
+      
+      setScanProgress('💾 جاري إعادة تحميل البيانات وتحديث لوحة العرض...');
+      await refetchComments();
+      alert('تم تصنيف مشاعر الطلاب وتحديث قاعدة البيانات بنجاح!');
+    } catch (err) {
+      console.error('Error scanning sentiment:', err);
+      alert('حدث خطأ أثناء تصنيف مشاعر التعليقات بالـ AI.');
+    } finally {
+      setIsScanningSentiment(false);
+      setScanProgress('');
+    }
+  };
+
   const handleGenerateShortScript = async (painPoint) => {
     setIsGeneratingScript(true);
     setActiveScript(null);
@@ -144,7 +194,7 @@ export default function Comments() {
   return (
     <div className="space-y-6 w-full animate-fade-in text-on-surface">
       {/* Hero Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
         <div>
           <h2 className="font-headline text-2xl font-extrabold text-on-background tracking-tight">
             أصوات تعليقات الطلاب 💬
@@ -153,6 +203,30 @@ export default function Comments() {
             ورقة عمل شاملة ترصد وتجمع تعليقات طلاب المدرسين المنافسين من يوتيوب. حلل مشاعر الطلاب البرمجية، واصنع محتوى مضاد فوراً بالـ AI.
           </p>
         </div>
+
+        {/* AI Sentiment Batch Scanner Button */}
+        <button
+          onClick={handleScanNeutralComments}
+          disabled={isScanningSentiment}
+          className="bg-primary hover:bg-primary-container text-on-primary px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer"
+        >
+          {isScanningSentiment ? (
+            <>
+              <Loader2 size={14} className="animate-spin" />
+              <span>جاري تصنيف المشاعر...</span>
+            </>
+          ) : (
+            <>
+              <Sparkles size={14} />
+              <span>تصنيف المشاعر بالذكاء الاصطناعي</span>
+              {comments.filter(c => c.sentiment === 'neutral' || !c.sentiment).length > 0 && (
+                <span className="text-[9px] bg-white text-primary px-1.5 py-0.5 rounded-md font-mono font-black">
+                  {comments.filter(c => c.sentiment === 'neutral' || !c.sentiment).length}
+                </span>
+              )}
+            </>
+          )}
+        </button>
       </div>
 
       {/* KPI Stats Grid */}
@@ -354,6 +428,16 @@ export default function Comments() {
           </table>
         </div>
       </div>
+
+      {/* 🧠 Fullscreen AI Loading Overlay - Sentiment Scanning */}
+      {isScanningSentiment && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-md flex flex-col items-center justify-center gap-4 z-50 animate-fade-in">
+          <div className="w-16 h-16 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+          <p className="text-sm font-bold text-on-background animate-pulse text-center max-w-md leading-relaxed px-4">
+            {scanProgress}
+          </p>
+        </div>
+      )}
 
       {/* 🎬 Fullscreen AI Loading Overlay */}
       {isGeneratingScript && (

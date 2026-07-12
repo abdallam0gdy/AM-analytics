@@ -256,3 +256,29 @@ export async function generateShortVideoScript(painPoint, channelName) {
 
   return await callGemini(prompt);
 }
+
+/**
+ * Analyze a batch of comments and classify their sentiment
+ */
+export async function analyzeCommentsSentimentBatch(comments) {
+  if (!comments || comments.length === 0) return [];
+
+  const prompt = `أنت محلل مشاعر ذكي وخبير في تصنيف تعليقات الطلاب المصريين حول مواد البرمجة والكمبيوتر.
+صنّف مشاعر التعليقات البرمجية التالية إلى أحد التصنيفات الثلاثة فقط:
+- 'positive': إذا كان التعليق يحمل ثناءً أو شكراً أو حماساً أو فهماً كاملاً للدرس.
+- 'negative': إذا كان الطالب يعبّر عن عدم الفهم، أو متلخبط، أو يواجه مشكلة، أو يطلب إعادة شرح أو أمثلة أكثر (سؤال أو نقطة ألم).
+- 'neutral': إذا كان التعليق يحمل استفساراً عاماً (مثال: موعد المحاضرة القادمة) أو ليس به مشاعر واضحة.
+
+التعليقات المطلوب تصنيفها:
+${JSON.stringify(comments.map(c => ({ id: c.id, content: c.content })), null, 2)}
+
+أجب فقط بصيغة JSON كقائمة تحتوي على معرّف التعليق والتصنيف:
+[
+  {
+    "id": "معرف التعليق هنا",
+    "sentiment": "positive" أو "negative" أو "neutral"
+  }
+]`;
+
+  return await callGemini(prompt);
+}
