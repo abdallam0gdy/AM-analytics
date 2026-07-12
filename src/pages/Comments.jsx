@@ -123,11 +123,11 @@ export default function Comments() {
 
   // Batch scan unclassified comments
   const handleScanNeutralComments = async () => {
-    // Filter neutral or empty sentiments
-    const neutralComments = comments.filter(c => c.sentiment === 'neutral' || !c.sentiment);
+    // Filter only unclassified (null/empty) sentiments
+    const neutralComments = comments.filter(c => !c.sentiment || c.sentiment === 'unclassified');
     
     if (neutralComments.length === 0) {
-      alert('جميع تعليقات الطلاب الحالية مصنفة ومحللة بالفعل ولا يوجد تعليقات محايدة لتصنيفها!');
+      alert('جميع تعليقات الطلاب الحالية مصنفة ومحللة بالفعل ولا يوجد تعليقات بحاجة لتصنيف!');
       return;
     }
 
@@ -219,9 +219,9 @@ export default function Comments() {
             <>
               <Sparkles size={14} />
               <span>تصنيف المشاعر بالذكاء الاصطناعي</span>
-              {comments.filter(c => c.sentiment === 'neutral' || !c.sentiment).length > 0 && (
+              {comments.filter(c => !c.sentiment || c.sentiment === 'unclassified').length > 0 && (
                 <span className="text-[9px] bg-white text-primary px-1.5 py-0.5 rounded-md font-mono font-black">
-                  {comments.filter(c => c.sentiment === 'neutral' || !c.sentiment).length}
+                  {comments.filter(c => !c.sentiment || c.sentiment === 'unclassified').length}
                 </span>
               )}
             </>
