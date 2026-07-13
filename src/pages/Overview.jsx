@@ -50,6 +50,13 @@ const localTrendingFallback = [
   }
 ];
 
+const formatArabicDuration = (days) => {
+  if (days === 1) return 'يوم واحد';
+  if (days === 2) return 'يومين';
+  if (days >= 3 && days <= 10) return `${days} أيام`;
+  return `${days} يوم`;
+};
+
 export default function Overview() {
   // Pipeline State
   const [pipelineState, setPipelineState] = useState({ active: false, status: '', message: '', logs: [] });
@@ -444,11 +451,31 @@ export default function Overview() {
                 <div className="border-t border-outline-variant/10 pt-3">
                   <div className="flex items-center justify-between text-[10px] text-on-surface-variant font-mono mb-2">
                     <span>🎬 {video.views.toLocaleString('ar-EG')} مشاهدة</span>
-                    <span>📅 منذ {video.daysElapsed} أيام</span>
+                    <span className="font-bold text-primary dark:text-accent-container">⏳ خلال {formatArabicDuration(video.daysElapsed)} فقط!</span>
+                  </div>
+
+                  {/* Velocity Progress Bar (Visual Gauge) */}
+                  <div className="mb-2.5">
+                    <div className="flex justify-between items-center text-[9px] text-on-surface-variant/70 mb-1">
+                      <span>مقياس سرعة الانتشار</span>
+                      <span className="font-bold font-mono">{(video.viewsPerDay).toLocaleString('ar-EG')}/يوم</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          video.viewsPerDay >= 4000 
+                            ? 'bg-gradient-to-r from-orange-500 to-red-600' 
+                            : video.viewsPerDay >= 1500 
+                            ? 'bg-gradient-to-r from-amber-500 to-orange-500' 
+                            : 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                        }`}
+                        style={{ width: `${Math.min(100, Math.round((video.viewsPerDay / 5000) * 100))}%` }}
+                      />
+                    </div>
                   </div>
                   
                   <div className="p-2 rounded-lg bg-surface-container-lowest border border-outline-variant/10 text-[10px] text-on-surface-variant leading-relaxed">
-                    حقق هذا الفيديو رواجاً في وقت قياسي بمعدل <span className="font-bold text-red-600 dark:text-red-400 font-mono">{(video.viewsPerDay).toLocaleString('ar-EG')}</span> مشاهدة يومياً!
+                    انتشر هذا الفيديو بمعدل <span className="font-bold text-red-600 dark:text-red-400 font-mono">{(video.viewsPerDay).toLocaleString('ar-EG')}</span> مشاهدة يومياً في غضون <span className="font-bold text-primary dark:text-accent-container">{formatArabicDuration(video.daysElapsed)}</span>!
                   </div>
                 </div>
               </div>

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { 
   MessageSquare, Search, Filter, ExternalLink, ThumbsUp, 
-  Sparkles, ChevronLeft, Calendar, BrainCircuit, Play, Smile, Loader2
+  Sparkles, ChevronLeft, Calendar, BrainCircuit, Play, Smile, Loader2,
+  ChevronDown, Check
 } from 'lucide-react';
 import { useSupabaseData } from '../hooks/useSupabase';
 import { generateShortVideoScript, analyzeCommentsSentimentBatch } from '../lib/gemini';
@@ -71,6 +72,8 @@ export default function Comments() {
   const [sentimentFilter, setSentimentFilter] = useState('all'); // 'all' | 'positive' | 'negative' | 'neutral'
   const [competitorFilter, setCompetitorFilter] = useState('all');
   const [videoFilter, setVideoFilter] = useState('all');
+  const [isVideoDropdownOpen, setIsVideoDropdownOpen] = useState(false);
+  const [videoSearchQuery, setVideoSearchQuery] = useState('');
   
   // AI Script Modal States
   const [activeScript, setActiveScript] = useState(null);
@@ -112,6 +115,10 @@ export default function Comments() {
       .filter(c => competitorFilter === 'all' ? true : c.competitorName === competitorFilter)
       .map(c => c.videoTitle)
   )];
+
+  const filteredVideoOptions = videoOptions.filter(title =>
+    title.toLowerCase().includes(videoSearchQuery.toLowerCase())
+  );
 
   // Filtering logic
   const filteredComments = comments.filter(c => {
@@ -316,6 +323,7 @@ export default function Comments() {
             onChange={(e) => {
               setCompetitorFilter(e.target.value);
               setVideoFilter('all');
+              setVideoSearchQuery('');
             }}
             className="px-3 py-2 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none cursor-pointer"
           >
@@ -325,21 +333,95 @@ export default function Comments() {
             ))}
           </select>
 
-          {/* Video Filter */}
-          <div className="flex items-center gap-1.5">
+          {/* Video Filter (Custom Premium Searchable Select Dropdown) */}
+          <div className="relative flex items-center gap-1.5">
             <Play size={12} className="text-on-surface-variant/60" />
-            <select
-              value={videoFilter}
-              onChange={(e) => setVideoFilter(e.target.value)}
-              className="px-3 py-2 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none max-w-[160px] sm:max-w-[240px] truncate cursor-pointer"
-            >
-              <option value="all">كل الفيديوهات</option>
-              {videoOptions.map((title, idx) => (
-                <option key={idx} value={title}>
-                  {title.length > 40 ? title.substring(0, 40) + '...' : title}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              {/* Trigger Button */}
+              <button
+                type="button"
+                onClick={() => setIsVideoDropdownOpen(!isVideoDropdownOpen)}
+                className="px-3 py-2 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none flex items-center justify-between gap-2 max-w-[160px] sm:max-w-[240px] truncate cursor-pointer hover:bg-surface-container-high transition-colors"
+              >
+                <span className="truncate">
+                  {videoFilter === 'all' ? 'كل الفيديوهات' : videoFilter}
+                </span>
+                <ChevronDown size={12} className={`text-on-surface-variant/70 transition-transform ${isVideoDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Backdrop to close dropdown on click outside */}
+              {isVideoDropdownOpen && (
+                <div 
+                  className="fixed inset-0 z-30" 
+                  onClick={() => setIsVideoDropdownOpen(false)}
+                />
+              )}
+
+              {/* Dropdown Menu */}
+              {isVideoDropdownOpen && (
+                <div className="absolute right-0 mt-2 z-40 w-72 sm:w-96 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-2xl p-2.5 flex flex-col gap-2.5 animate-scale-up text-right" dir="rtl">
+                  {/* Search Input */}
+                  <div className="relative">
+                    <Search className="absolute start-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40" size={12} />
+                    <input
+                      type="text"
+                      placeholder="ابحث عن فيديو..."
+                      value={videoSearchQuery}
+                      onChange={(e) => setVideoSearchQuery(e.target.value)}
+                      className="w-full ps-8 pe-3 py-1.5 text-xs rounded-lg bg-surface-container border border-outline-variant/20 text-on-surface focus:outline-none focus:ring-1 focus:ring-primary/20"
+                    />
+                  </div>
+
+                  {/* Options List */}
+                  <div className="max-h-60 overflow-y-auto space-y-0.5 scrollbar-thin">
+                    {/* "All Videos" Option */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVideoFilter('all');
+                        setIsVideoDropdownOpen(false);
+                        setVideoSearchQuery('');
+                      }}
+                      className={`w-full px-3 py-2 text-right text-xs rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+                        videoFilter === 'all' 
+                          ? 'bg-primary/10 text-primary font-bold' 
+                          : 'text-on-surface hover:bg-surface-container'
+                      }`}
+                    >
+                      <span>كل الفيديوهات</span>
+                      {videoFilter === 'all' && <Check size={12} />}
+                    </button>
+
+                    {/* Filtered Video Titles */}
+                    {filteredVideoOptions.length > 0 ? (
+                      filteredVideoOptions.map((title, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setVideoFilter(title);
+                            setIsVideoDropdownOpen(false);
+                            setVideoSearchQuery('');
+                          }}
+                          className={`w-full px-3 py-2 text-right text-xs rounded-xl flex items-center justify-between transition-colors cursor-pointer gap-2 ${
+                            videoFilter === title 
+                              ? 'bg-primary/10 text-primary font-bold' 
+                              : 'text-on-surface hover:bg-surface-container'
+                          }`}
+                        >
+                          <span className="truncate leading-relaxed">{title}</span>
+                          {videoFilter === title && <Check size={12} className="shrink-0" />}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="py-3 text-center text-xs text-on-surface-variant/50">
+                        لا توجد فيديوهات مطابقة للبحث
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
