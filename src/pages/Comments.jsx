@@ -20,6 +20,52 @@ function getAvatarColor(name) {
   return colors[index];
 }
 
+// Helper to render text and highlight clickable links (specifically WhatsApp and Telegram group links)
+function renderCommentContentWithLinks(text) {
+  if (!text) return '';
+  
+  // Regex to match URLs
+  const URL_REGEX = /(https?:\/\/[^\s<>]+)/g;
+  const parts = text.split(URL_REGEX);
+  
+  return parts.map((part, i) => {
+    // We need to re-verify if this specific part is indeed a URL
+    if (/https?:\/\/[^\s<>]+/i.test(part)) {
+      const isWhatsApp = part.includes('whatsapp.com');
+      const isTelegram = part.includes('t.me');
+      
+      let badgeClass = "text-primary hover:underline font-semibold inline-flex items-center gap-1 break-all";
+      let icon = "🔗";
+      let label = part;
+      
+      if (isWhatsApp) {
+        badgeClass = "text-emerald-600 dark:text-emerald-400 hover:underline font-bold inline-flex items-center gap-1 bg-emerald-500/10 dark:bg-emerald-500/20 px-2 py-1 rounded-xl text-[10px] break-all border border-emerald-500/20";
+        icon = "🟢 جروب واتساب:";
+      } else if (isTelegram) {
+        badgeClass = "text-sky-600 dark:text-sky-400 hover:underline font-bold inline-flex items-center gap-1 bg-sky-500/10 dark:bg-sky-500/20 px-2 py-1 rounded-xl text-[10px] break-all border border-sky-500/20";
+        icon = "🔵 جروب تليجرام:";
+      } else {
+        badgeClass = "text-primary dark:text-primary-container hover:underline font-semibold inline-flex items-center gap-1 bg-primary/5 dark:bg-primary/10 px-2 py-1 rounded-xl text-[10px] break-all border border-primary/10";
+      }
+      
+      return (
+        <a 
+          key={i} 
+          href={part} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className={badgeClass}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span>{icon}</span>
+          <span className="underline">{label}</span>
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 const localCommentsFallback = [
   {
     id: "comment-1",
@@ -64,6 +110,39 @@ const localCommentsFallback = [
     sentiment: "neutral",
     video: { title: "مقدمة الذكاء الاصطناعي لثانوي" },
     competitor: { name: "المهندس شريف" }
+  },
+  {
+    id: "comment-5",
+    author_name: "حسن السيد",
+    author_avatar: "",
+    content: "يا جماعة ده جروب الواتساب المخصص لمناقشة منهج البرمجة وحل المسائل مع الأستاذ: https://chat.whatsapp.com/Kx87fLd9012Jk",
+    like_count: 15,
+    published_at: "2026-07-14T11:20:00Z",
+    sentiment: "neutral",
+    video: { title: "مقدمة البرمجة والـ Arrays للصف الأول الثانوي" },
+    competitor: { name: "مستر أحمد السقا" }
+  },
+  {
+    id: "comment-6",
+    author_name: "ميادة عمر",
+    author_avatar: "",
+    content: "يا مستر لو سمحت ارفع لينا ملخص درس الـ Loops بي دي اف هنا: https://drive.google.com/file/d/1aB2c3D4eF/view",
+    like_count: 8,
+    published_at: "2026-07-13T10:15:00Z",
+    sentiment: "neutral",
+    video: { title: "شرح الحلقات التكرارية Loops تانية ثانوي" },
+    competitor: { name: "المهندس شريف" }
+  },
+  {
+    id: "comment-7",
+    author_name: "أحمد رامي",
+    author_avatar: "",
+    content: "تم إنشاء جروب تليجرام للمراجعات النهائية والتقييمات الأسبوعية: https://t.me/AM_Secondary_Programming",
+    like_count: 21,
+    published_at: "2026-07-14T21:40:00Z",
+    sentiment: "positive",
+    video: { title: "مراجعة أدوات الشرط والـ Loops" },
+    competitor: { name: "مستر أحمد السقا" }
   }
 ];
 
@@ -74,6 +153,7 @@ export default function Comments() {
   const [videoFilter, setVideoFilter] = useState('all');
   const [isVideoDropdownOpen, setIsVideoDropdownOpen] = useState(false);
   const [videoSearchQuery, setVideoSearchQuery] = useState('');
+  const [onlyWithLinks, setOnlyWithLinks] = useState(false);
   
   // AI Script Modal States
   const [activeScript, setActiveScript] = useState(null);
@@ -128,7 +208,10 @@ export default function Comments() {
     const competitorMatches = competitorFilter === 'all' ? true : c.competitorName === competitorFilter;
     const videoMatches = videoFilter === 'all' ? true : c.videoTitle === videoFilter;
     
-    return textMatches && sentimentMatches && competitorMatches && videoMatches;
+    // Links filter
+    const linkMatches = onlyWithLinks ? /https?:\/\/[^\s<>]+/i.test(c.content || '') : true;
+    
+    return textMatches && sentimentMatches && competitorMatches && videoMatches && linkMatches;
   });
 
   // Stats
@@ -136,6 +219,9 @@ export default function Comments() {
   const negativeCommentsCount = comments.filter(c => c.sentiment === 'negative').length;
   const positiveCommentsCount = comments.filter(c => c.sentiment === 'positive').length;
   const positiveRatio = totalCommentsCount > 0 ? Math.round((positiveCommentsCount / totalCommentsCount) * 100) : 100;
+  
+  // Count of comments containing any link (WhatsApp, Telegram, general web link)
+  const commentsWithLinksCount = comments.filter(c => /https?:\/\/[^\s<>]+/i.test(c.content || '')).length;
 
   // Batch scan unclassified comments
   const handleScanNeutralComments = async () => {
@@ -302,6 +388,25 @@ export default function Comments() {
 
         {/* Filters */}
         <div className="flex flex-wrap gap-2.5 items-center">
+          {/* Links Filter Chip */}
+          <button
+            onClick={() => setOnlyWithLinks(!onlyWithLinks)}
+            className={`px-3 py-2 text-xs rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer ${
+              onlyWithLinks 
+                ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold' 
+                : 'bg-surface-container border-outline-variant/30 text-on-surface hover:bg-surface-container-high'
+            }`}
+          >
+            <span>روابط وجروبات واتساب 🔗</span>
+            {commentsWithLinksCount > 0 && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold font-mono ${
+                onlyWithLinks ? 'bg-emerald-500 text-white' : 'bg-surface-container-highest text-on-surface-variant'
+              }`}>
+                {commentsWithLinksCount}
+              </span>
+            )}
+          </button>
+
           {/* Sentiment Filter */}
           <div className="flex items-center gap-1.5">
             <Filter size={12} className="text-on-surface-variant/60" />
@@ -463,9 +568,9 @@ export default function Comments() {
 
                       {/* Content */}
                       <td className="p-4 min-w-[250px] max-w-[400px]">
-                        <p className="text-on-surface-variant leading-relaxed line-clamp-2 hover:line-clamp-none transition-all duration-200">
-                          {comment.content}
-                        </p>
+                        <div className="text-on-surface-variant leading-relaxed line-clamp-3 hover:line-clamp-none transition-all duration-200 flex flex-wrap gap-x-1 gap-y-1.5 items-center">
+                          {renderCommentContentWithLinks(comment.content)}
+                        </div>
                       </td>
 
                       {/* Competitor */}
