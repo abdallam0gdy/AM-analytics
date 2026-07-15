@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { 
   MessageSquare, Search, Filter, ExternalLink, ThumbsUp, 
   Sparkles, ChevronLeft, Calendar, BrainCircuit, Play, Smile, Loader2,
-  ChevronDown, Check
+  ChevronDown, Check, ChevronRight
 } from 'lucide-react';
 import { useSupabaseData } from '../hooks/useSupabase';
 import { generateShortVideoScript, analyzeCommentsSentimentBatch } from '../lib/gemini';
@@ -154,6 +154,8 @@ export default function Comments() {
   const [isVideoDropdownOpen, setIsVideoDropdownOpen] = useState(false);
   const [videoSearchQuery, setVideoSearchQuery] = useState('');
   const [onlyWithLinks, setOnlyWithLinks] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   
   // AI Script Modal States
   const [activeScript, setActiveScript] = useState(null);
@@ -213,6 +215,13 @@ export default function Comments() {
     
     return textMatches && sentimentMatches && competitorMatches && videoMatches && linkMatches;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredComments.length / pageSize);
+  const activePage = Math.min(currentPage, Math.max(1, totalPages));
+  const indexOfLastItem = activePage * pageSize;
+  const indexOfFirstItem = indexOfLastItem - pageSize;
+  const currentComments = filteredComments.slice(indexOfFirstItem, indexOfLastItem);
 
   // Stats
   const totalCommentsCount = comments.length;
@@ -381,7 +390,7 @@ export default function Comments() {
             type="text"
             placeholder="البحث في التعليقات أو أسماء الطلاب..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             className="w-full ps-9 pe-4 py-2 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
@@ -390,7 +399,7 @@ export default function Comments() {
         <div className="flex flex-wrap gap-2.5 items-center">
           {/* Links Filter Chip */}
           <button
-            onClick={() => setOnlyWithLinks(!onlyWithLinks)}
+            onClick={() => { setOnlyWithLinks(!onlyWithLinks); setCurrentPage(1); }}
             className={`px-3 py-2 text-xs rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer ${
               onlyWithLinks 
                 ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold' 
@@ -412,7 +421,7 @@ export default function Comments() {
             <Filter size={12} className="text-on-surface-variant/60" />
             <select
               value={sentimentFilter}
-              onChange={(e) => setSentimentFilter(e.target.value)}
+              onChange={(e) => { setSentimentFilter(e.target.value); setCurrentPage(1); }}
               className="px-3 py-2 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none cursor-pointer"
             >
               <option value="all">كل المشاعر</option>
@@ -429,6 +438,7 @@ export default function Comments() {
               setCompetitorFilter(e.target.value);
               setVideoFilter('all');
               setVideoSearchQuery('');
+              setCurrentPage(1);
             }}
             className="px-3 py-2 text-xs rounded-xl bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none cursor-pointer"
           >
@@ -486,6 +496,7 @@ export default function Comments() {
                         setVideoFilter('all');
                         setIsVideoDropdownOpen(false);
                         setVideoSearchQuery('');
+                        setCurrentPage(1);
                       }}
                       className={`w-full px-3 py-2 text-right text-xs rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
                         videoFilter === 'all' 
@@ -507,6 +518,7 @@ export default function Comments() {
                             setVideoFilter(title);
                             setIsVideoDropdownOpen(false);
                             setVideoSearchQuery('');
+                            setCurrentPage(1);
                           }}
                           className={`w-full px-3 py-2 text-right text-xs rounded-xl flex items-center justify-between transition-colors cursor-pointer gap-2 ${
                             videoFilter === title 
@@ -548,8 +560,8 @@ export default function Comments() {
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/10 text-xs">
-              {filteredComments.length > 0 ? (
-                filteredComments.map((comment) => {
+              {currentComments.length > 0 ? (
+                currentComments.map((comment) => {
                   const avatarColor = getAvatarColor(comment.author_name);
                   return (
                     <tr key={comment.id} className="hover:bg-surface-container/20 transition-colors">
@@ -644,6 +656,74 @@ export default function Comments() {
           </table>
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {filteredComments.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-surface-container-lowest border border-outline-variant/30 p-4 rounded-2xl shadow-sm text-xs text-on-surface-variant font-medium">
+          {/* Page size selector */}
+          <div className="flex items-center gap-2">
+            <span>التعليقات في الصفحة:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-2.5 py-1.5 rounded-lg bg-surface-container border border-outline-variant/30 text-on-surface focus:outline-none cursor-pointer text-xs font-bold"
+            >
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+
+          {/* Showing records summary */}
+          <div className="text-center font-semibold" dir="rtl">
+            عرض التعليقات <span className="font-bold text-on-surface font-mono">{indexOfFirstItem + 1}</span> - <span className="font-bold text-on-surface font-mono">{Math.min(indexOfLastItem, filteredComments.length)}</span> من أصل <span className="font-bold text-primary font-mono">{filteredComments.length}</span> تعليق
+          </div>
+
+          {/* Page numbers navigation buttons */}
+          <div className="flex items-center gap-1.5" dir="rtl">
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={activePage === 1}
+              className="p-1.5 rounded-lg bg-surface-container border border-outline-variant/20 hover:bg-surface-container-high disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+              title="الصفحة الأولى"
+            >
+              <span>«</span>
+            </button>
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={activePage === 1}
+              className="p-1.5 rounded-lg bg-surface-container border border-outline-variant/20 hover:bg-surface-container-high disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center cursor-pointer"
+              title="الصفحة السابقة"
+            >
+              <ChevronRight size={14} />
+            </button>
+            
+            <span className="px-3 py-1 bg-primary/10 text-primary font-bold rounded-lg font-mono">
+              الصفحة {activePage} من {totalPages}
+            </span>
+
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={activePage === totalPages}
+              className="p-1.5 rounded-lg bg-surface-container border border-outline-variant/20 hover:bg-surface-container-high disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center cursor-pointer"
+              title="الصفحة التالية"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={activePage === totalPages}
+              className="p-1.5 rounded-lg bg-surface-container border border-outline-variant/20 hover:bg-surface-container-high disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+              title="الصفحة الأخيرة"
+            >
+              <span>»</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 🧠 Fullscreen AI Loading Overlay - Sentiment Scanning */}
       {isScanningSentiment && (
