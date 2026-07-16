@@ -7,13 +7,14 @@ export async function onRequest(context) {
   const model = url.searchParams.get('model') || 'gemini-3.5-flash';
 
   // Read environment variable securely from Cloudflare Pages environment
-  const GEMINI_API_KEY = context.env.VITE_GEMINI_API_KEY;
+  const GEMINI_API_KEY = context.env.GEMINI_API_KEY || context.env.VITE_GEMINI_API_KEY;
   if (!GEMINI_API_KEY) {
     return new Response(
-      JSON.stringify({ error: "Gemini API Key is not configured on Cloudflare. Please set VITE_GEMINI_API_KEY in Page settings." }), 
+      JSON.stringify({ error: "Gemini API Key is not configured on Cloudflare. Please set GEMINI_API_KEY in Pages settings." }), 
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
+
 
   try {
     const body = await context.request.json();

@@ -13,13 +13,14 @@ export async function onRequest(context) {
   url.searchParams.delete('endpoint');
 
   // Read environment variable securely from Cloudflare Pages environment
-  const YOUTUBE_API_KEY = context.env.VITE_YOUTUBE_API_KEY;
+  const YOUTUBE_API_KEY = context.env.YOUTUBE_API_KEY || context.env.VITE_YOUTUBE_API_KEY;
   if (!YOUTUBE_API_KEY) {
     return new Response(
-      JSON.stringify({ error: "YouTube API Key is not configured on Cloudflare. Please set VITE_YOUTUBE_API_KEY in Page settings." }), 
+      JSON.stringify({ error: "YouTube API Key is not configured on Cloudflare. Please set YOUTUBE_API_KEY in Pages settings." }), 
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
+
 
   try {
     // Re-construct the target YouTube v3 API URL

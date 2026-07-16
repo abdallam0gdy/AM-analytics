@@ -18,7 +18,11 @@ const SEARCH_QUERIES = [
 // Helper for YouTube fetching
 async function ytFetch(endpoint, params) {
   let res;
-  if (YOUTUBE_API_KEY) {
+  // In production, we FORCE using the proxy to prevent any client-side exposure.
+  // In development (local), we can call directly if the key is defined.
+  const useProxy = import.meta.env.PROD || !YOUTUBE_API_KEY;
+
+  if (!useProxy) {
     // Direct call (local development mode)
     const url = new URL(`${YT_BASE}/${endpoint}`);
     url.searchParams.set('key', YOUTUBE_API_KEY);
@@ -35,6 +39,7 @@ async function ytFetch(endpoint, params) {
     }
     res = await fetch(url);
   }
+
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -120,7 +125,7 @@ export async function runFrontendPipeline(onProgress = () => {}) {
   if (!supabase) {
     throw new Error('Supabase غير متصل. يرجى إعداد المتغيرات البيئية.');
   }
-  if (!YOUTUBE_API_KEY) {
+  if (!YOUTUBE_API_KEY && !import.meta.env.PROD) {
     throw new Error('مفتاح YouTube API مفقود (VITE_YOUTUBE_API_KEY).');
   }
   if (!isGeminiConfigured) {

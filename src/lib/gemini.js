@@ -44,7 +44,11 @@ export async function callGemini(prompt, config = {}, modelIndex = 0, retries = 
       },
     };
 
-    if (GEMINI_API_KEY) {
+    // In production, we FORCE using the proxy to prevent any client-side exposure.
+    // In development (local), we can call directly if the key is defined.
+    const useProxy = import.meta.env.PROD || !GEMINI_API_KEY;
+
+    if (!useProxy) {
       // Direct call (local development mode)
       const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
       response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
@@ -61,6 +65,7 @@ export async function callGemini(prompt, config = {}, modelIndex = 0, retries = 
       });
     }
   } catch (error) {
+
 
     // Network error - retry if possible
     if (retries > 0 && (error.message.includes('fetch') || error.message.includes('Network'))) {
