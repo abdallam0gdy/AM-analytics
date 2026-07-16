@@ -5,23 +5,14 @@ import StatCard from '../components/cards/StatCard';
 import PainPointsChart from '../components/charts/PainPointsChart';
 import { useSupabaseData, useSupabaseStatus } from '../hooks/useSupabase';
 import { runFrontendPipeline } from '../lib/frontendPipeline';
+import { isGeminiConfigured } from '../lib/gemini';
+import { getAvatarColor } from '../lib/utils';
 import {
   dashboardStats as localStats,
   painPointsChartData as localPainPoints,
   realCompetitors as localCompetitors,
   curriculumTopics,
 } from '../data/mockData';
-
-// Helper to assign consistent avatar colors based on name string
-function getAvatarColor(name) {
-  const colors = ['#4F46E5', '#059669', '#DC2626', '#D97706', '#7C3AED', '#2563EB', '#DB2777'];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % colors.length;
-  return colors[index];
-}
 
 const localTrendingFallback = [
   {
@@ -148,18 +139,31 @@ export default function Overview() {
           <h1 className="text-xl font-bold text-on-surface mb-1">مرحباً، عبدالله 👋</h1>
           <p className="text-xs text-on-surface-variant">ملخص تحليل المنافسين في مادة البرمجة والذكاء الاصطناعي</p>
           <div className="flex flex-wrap items-center gap-2 pt-1.5">
-            <span className="inline-flex items-center gap-1.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              قاعدة البيانات متصلة
+            <span className={`inline-flex items-center gap-1.5 text-[9px] font-bold px-2 py-0.5 rounded-lg ${
+              isSupabaseConnected 
+                ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' 
+                : 'text-amber-600 dark:text-amber-400 bg-amber-500/10'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isSupabaseConnected ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+              {isSupabaseConnected ? 'قاعدة البيانات متصلة' : 'وضع البيانات المحلية'}
             </span>
-            <span className="inline-flex items-center gap-1.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Gemini AI نشط
+            <span className={`inline-flex items-center gap-1.5 text-[9px] font-bold px-2 py-0.5 rounded-lg ${
+              isGeminiConfigured 
+                ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' 
+                : 'text-amber-600 dark:text-amber-400 bg-amber-500/10'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isGeminiConfigured ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+              {isGeminiConfigured ? 'Gemini AI نشط' : 'بدون AI (غير متصل)'}
             </span>
-            <span className="inline-flex items-center gap-1.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              رادار يوتيوب جاهز
+            <span className={`inline-flex items-center gap-1.5 text-[9px] font-bold px-2 py-0.5 rounded-lg ${
+              (Boolean(import.meta.env.VITE_YOUTUBE_API_KEY) || import.meta.env.PROD)
+                ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' 
+                : 'text-amber-600 dark:text-amber-400 bg-amber-500/10'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${(Boolean(import.meta.env.VITE_YOUTUBE_API_KEY) || import.meta.env.PROD) ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+              {(Boolean(import.meta.env.VITE_YOUTUBE_API_KEY) || import.meta.env.PROD) ? 'رادار يوتيوب جاهز' : 'مفتاح يوتيوب مفقود'}
             </span>
+
           </div>
         </div>
         {isSupabaseConnected && (

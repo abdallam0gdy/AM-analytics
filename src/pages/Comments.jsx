@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   MessageSquare, Search, Filter, ExternalLink, ThumbsUp, 
   Sparkles, ChevronLeft, Calendar, BrainCircuit, Play, Smile, Loader2,
@@ -7,18 +7,8 @@ import {
 import { useSupabaseData } from '../hooks/useSupabase';
 import { generateShortVideoScript, analyzeCommentsSentimentBatch } from '../lib/gemini';
 import { supabase } from '../lib/supabase';
-
-// Helper to assign consistent avatar colors based on name string
-function getAvatarColor(name) {
-  if (!name) return '#4F46E5';
-  const colors = ['#4F46E5', '#059669', '#DC2626', '#D97706', '#7C3AED', '#2563EB', '#DB2777'];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % colors.length;
-  return colors[index];
-}
+import { getAvatarColor, copyToClipboard } from '../lib/utils';
+import { useToast } from '../context/ToastContext';
 
 // Helper to render text and highlight clickable links (specifically WhatsApp and Telegram group links)
 function renderCommentContentWithLinks(text) {
@@ -147,6 +137,7 @@ const localCommentsFallback = [
 ];
 
 export default function Comments() {
+  const { showToast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [sentimentFilter, setSentimentFilter] = useState('all'); // 'all' | 'positive' | 'negative' | 'neutral'
   const [competitorFilter, setCompetitorFilter] = useState('all');
@@ -174,63 +165,77 @@ export default function Comments() {
   const { data: competitors } = useSupabaseData('competitors', {}, []);
 
   // Format comments to match nested structure safely
-  const comments = (rawComments || []).map(c => {
-    // If supabase didn't populate relationships properly, add fallback properties
-    const videoTitle = c.video?.title || 'فيديو غير محدد';
-    const videoUrl = c.video?.url || '#';
-    const competitorName = c.competitor?.name || 'مدرس غير محدد';
-    
-    return {
-      ...c,
-      videoTitle,
-      videoUrl,
-      competitorName
-    };
-  });
+  const comments = useMemo(() => {
+    return (rawComments || []).map(c => {
+      // If supabase didn't populate relationships properly, add fallback properties
+      const videoTitle = c.video?.title || 'فيديو غير محدد';
+      const videoUrl = c.video?.url || '#';
+      const competitorName = c.competitor?.name || 'مدرس غير محدد';
+      
+      return {
+        ...c,
+        videoTitle,
+        videoUrl,
+        competitorName
+      };
+    });
+  }, [rawComments]);
 
   // Unique competitor names for filter dropdown
-  const competitorNames = [...new Set(comments.map(c => c.competitorName))];
+  const competitorNames = useMemo(() => {
+    return [...new Set(comments.map(c => c.competitorName))];
+  }, [comments]);
 
   // Unique video options filtered by selected competitor
-  const videoOptions = [...new Set(
-    comments
-      .filter(c => competitorFilter === 'all' ? true : c.competitorName === competitorFilter)
-      .map(c => c.videoTitle)
-  )];
+  const videoOptions = useMemo(() => {
+    return [...new Set(
+      comments
+        .filter(c => competitorFilter === 'all' ? true : c.competitorName === competitorFilter)
+        .map(c => c.videoTitle)
+    )];
+  }, [comments, competitorFilter]);
 
-  const filteredVideoOptions = videoOptions.filter(title =>
-    title.toLowerCase().includes(videoSearchQuery.toLowerCase())
-  );
+  const filteredVideoOptions = useMemo(() => {
+    return videoOptions.filter(title =>
+      title.toLowerCase().includes(videoSearchQuery.toLowerCase())
+    );
+  }, [videoOptions, videoSearchQuery]);
 
   // Filtering logic
-  const filteredComments = comments.filter(c => {
-    const textMatches = (c.content || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        (c.author_name || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const sentimentMatches = sentimentFilter === 'all' ? true : c.sentiment === sentimentFilter;
-    const competitorMatches = competitorFilter === 'all' ? true : c.competitorName === competitorFilter;
-    const videoMatches = videoFilter === 'all' ? true : c.videoTitle === videoFilter;
-    
-    // Links filter
-    const linkMatches = onlyWithLinks ? /https?:\/\/[^\s<>]+/i.test(c.content || '') : true;
-    
-    return textMatches && sentimentMatches && competitorMatches && videoMatches && linkMatches;
-  });
+  const filteredComments = useMemo(() => {
+    return comments.filter(c => {
+      const textMatches = (c.content || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (c.author_name || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const sentimentMatches = sentimentFilter === 'all' ? true : c.sentiment === sentimentFilter;
+      const competitorMatches = competitorFilter === 'all' ? true : c.competitorName === competitorFilter;
+      const videoMatches = videoFilter === 'all' ? true : c.videoTitle === videoFilter;
+      
+      // Links filter
+      const linkMatches = onlyWithLinks ? /https?:\/\/[^\s<>]+/i.test(c.content || '') : true;
+      
+      return textMatches && sentimentMatches && competitorMatches && videoMatches && linkMatches;
+    });
+  }, [comments, searchQuery, sentimentFilter, competitorFilter, videoFilter, onlyWithLinks]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredComments.length / pageSize);
-  const activePage = Math.min(currentPage, Math.max(1, totalPages));
-  const indexOfLastItem = activePage * pageSize;
-  const indexOfFirstItem = indexOfLastItem - pageSize;
+  const activePage = totalPages === 0 ? 0 : Math.min(currentPage, totalPages);
+  const indexOfFirstItem = totalPages === 0 ? 0 : (activePage - 1) * pageSize;
+  const indexOfLastItem = totalPages === 0 ? 0 : Math.min(indexOfFirstItem + pageSize, filteredComments.length);
   const currentComments = filteredComments.slice(indexOfFirstItem, indexOfLastItem);
+
 
   // Stats
   const totalCommentsCount = comments.length;
-  const negativeCommentsCount = comments.filter(c => c.sentiment === 'negative').length;
-  const positiveCommentsCount = comments.filter(c => c.sentiment === 'positive').length;
-  const positiveRatio = totalCommentsCount > 0 ? Math.round((positiveCommentsCount / totalCommentsCount) * 100) : 100;
+  const negativeCommentsCount = useMemo(() => comments.filter(c => c.sentiment === 'negative').length, [comments]);
+  const positiveCommentsCount = useMemo(() => comments.filter(c => c.sentiment === 'positive').length, [comments]);
+  const positiveRatio = useMemo(() => totalCommentsCount > 0 ? Math.round((positiveCommentsCount / totalCommentsCount) * 100) : 100, [totalCommentsCount, positiveCommentsCount]);
   
   // Count of comments containing any link (WhatsApp, Telegram, general web link)
-  const commentsWithLinksCount = comments.filter(c => /https?:\/\/[^\s<>]+/i.test(c.content || '')).length;
+  const commentsWithLinksCount = useMemo(() => comments.filter(c => /https?:\/\/[^\s<>]+/i.test(c.content || '')).length, [comments]);
+
+  // Unclassified comments count
+  const unclassifiedCommentsCount = useMemo(() => comments.filter(c => !c.sentiment || c.sentiment === 'unclassified').length, [comments]);
 
   // Batch scan unclassified comments
   const handleScanNeutralComments = async () => {
@@ -238,7 +243,7 @@ export default function Comments() {
     const neutralComments = comments.filter(c => !c.sentiment || c.sentiment === 'unclassified');
     
     if (neutralComments.length === 0) {
-      alert('جميع تعليقات الطلاب الحالية مصنفة ومحللة بالفعل ولا يوجد تعليقات بحاجة لتصنيف!');
+      showToast('جميع تعليقات الطلاب الحالية مصنفة ومحللة بالفعل ولا يوجد تعليقات بحاجة لتصنيف!', 'info');
       return;
     }
 
@@ -267,10 +272,10 @@ export default function Comments() {
       
       setScanProgress('💾 جاري إعادة تحميل البيانات وتحديث لوحة العرض...');
       await refetchComments();
-      alert('تم تصنيف مشاعر الطلاب وتحديث قاعدة البيانات بنجاح!');
+      showToast('تم تصنيف مشاعر الطلاب وتحديث قاعدة البيانات بنجاح!', 'success');
     } catch (err) {
       console.error('Error scanning sentiment:', err);
-      alert('حدث خطأ أثناء تصنيف مشاعر التعليقات بالـ AI.');
+      showToast('حدث خطأ أثناء تصنيف مشاعر التعليقات بالـ AI.', 'error');
     } finally {
       setIsScanningSentiment(false);
       setScanProgress('');
@@ -296,7 +301,7 @@ export default function Comments() {
       }
     } catch (err) {
       console.error(err);
-      alert('حدث خطأ أثناء توليد سيناريو الفيديو بالـ AI.');
+      showToast('حدث خطأ أثناء توليد سيناريو الفيديو بالـ AI.', 'error');
     } finally {
       setIsGeneratingScript(false);
     }
@@ -330,9 +335,9 @@ export default function Comments() {
             <>
               <Sparkles size={14} />
               <span>تصنيف المشاعر بالذكاء الاصطناعي</span>
-              {comments.filter(c => !c.sentiment || c.sentiment === 'unclassified').length > 0 && (
+              {unclassifiedCommentsCount > 0 && (
                 <span className="text-[9px] bg-white text-primary px-1.5 py-0.5 rounded-md font-mono font-black">
-                  {comments.filter(c => !c.sentiment || c.sentiment === 'unclassified').length}
+                  {unclassifiedCommentsCount}
                 </span>
               )}
             </>
@@ -800,10 +805,14 @@ export default function Comments() {
             {/* Footer */}
             <div className="p-6 border-t border-outline-variant/30 flex justify-between bg-surface-container/20">
               <button
-                onClick={() => {
+                onClick={async () => {
                   const fullText = `عنوان الفيديو: ${activeScript.video_title}\n\nالخطاف (Hook):\n${activeScript.hook}\n\nالسيناريو:\n${activeScript.body.map((s, i) => `خطوة ${i+1}:\nالمرئي: ${s.visual}\nالصوت: ${s.audio}`).join('\n\n')}\n\nنهاية الفيديو: ${activeScript.call_to_action}`;
-                  navigator.clipboard.writeText(fullText);
-                  alert('تم نسخ سيناريو الفيديو بالكامل للمذكرة!');
+                  const ok = await copyToClipboard(fullText);
+                  if (ok) {
+                    showToast('تم نسخ سيناريو الفيديو بالكامل للمذكرة!', 'success');
+                  } else {
+                    showToast('فشل نسخ النص تلقائياً، يرجى تظليله ونسخه يدوياً.', 'error');
+                  }
                 }}
                 className="px-4 py-2 bg-secondary/10 text-secondary border border-secondary/20 text-xs font-bold rounded-xl hover:bg-secondary/20 transition-all cursor-pointer"
               >

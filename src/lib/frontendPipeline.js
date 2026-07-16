@@ -1,15 +1,7 @@
 import { supabase } from './supabase';
-import { filterAndClassifyCommentsWithAI } from './gemini';
+import { filterAndClassifyCommentsWithAI, callGemini as callGeminiBase, isGeminiConfigured } from './gemini';
 
 const YOUTUBE_API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const MODELS = [
-  'gemini-3.5-flash',
-  'gemini-3-flash',
-  'gemini-3.1-flash-lite',
-  'gemini-2.5-flash',
-  'gemini-2.5-flash-lite'
-];
 const YT_BASE = 'https://www.googleapis.com/youtube/v3';
 
 // Search terms for the radar (covering both 1st and 2nd Secondary Grades)
@@ -25,13 +17,25 @@ const SEARCH_QUERIES = [
 
 // Helper for YouTube fetching
 async function ytFetch(endpoint, params) {
-  const url = new URL(`${YT_BASE}/${endpoint}`);
-  url.searchParams.set('key', YOUTUBE_API_KEY);
-  for (const [k, v] of Object.entries(params)) {
-    url.searchParams.set(k, v);
+  let res;
+  if (YOUTUBE_API_KEY) {
+    // Direct call (local development mode)
+    const url = new URL(`${YT_BASE}/${endpoint}`);
+    url.searchParams.set('key', YOUTUBE_API_KEY);
+    for (const [k, v] of Object.entries(params)) {
+      url.searchParams.set(k, v);
+    }
+    res = await fetch(url);
+  } else {
+    // Proxy call (production mode)
+    const url = new URL('/api/youtube', window.location.origin);
+    url.searchParams.set('endpoint', endpoint);
+    for (const [k, v] of Object.entries(params)) {
+      url.searchParams.set(k, v);
+    }
+    res = await fetch(url);
   }
 
-  const res = await fetch(url);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(`YouTube API Error (${res.status}): ${err.error?.message || 'Unknown'}`);
@@ -39,61 +43,10 @@ async function ytFetch(endpoint, params) {
   return res.json();
 }
 
-// Helper for Gemini AI structured call
-async function callGemini(prompt, modelIndex = 0, retries = 3, delayMs = 3000) {
-  let text = '';
-  try {
-    const modelName = MODELS[modelIndex];
-    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
 
-    const res = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 2048,
-          responseMimeType: 'application/json',
-        },
-      }),
-    });
-
-    if (!res.ok) {
-      if (res.status === 429 || res.status === 404) {
-        if (modelIndex < MODELS.length - 1) {
-          console.warn(`[Gemini API] Error ${res.status} for ${modelName}. Falling back to ${MODELS[modelIndex + 1]}...`);
-          return callGemini(prompt, modelIndex + 1, retries, delayMs);
-        } else if (retries > 0) {
-          console.warn(`[Gemini API] Rate limit hit on all models. Retrying in ${delayMs}ms...`);
-          await new Promise(r => setTimeout(r, delayMs));
-          return callGemini(prompt, 0, retries - 1, delayMs * 2);
-        }
-      }
-      const err = await res.json().catch(() => ({}));
-      throw new Error(`Gemini Error: ${err.error?.message || res.status}`);
-    }
-
-    const data = await res.json();
-    text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error('رد فارغ من Gemini');
-
-  } catch (error) {
-    if (retries > 0 && (error.message.includes('fetch') || error.message.includes('Network'))) {
-      console.warn(`[Gemini API] Network error hit. Retrying in ${delayMs}ms...`);
-      await new Promise(r => setTimeout(r, delayMs));
-      return callGemini(prompt, modelIndex, retries - 1, delayMs * 2);
-    }
-    throw error;
-  }
-
-  try {
-    const cleanText = text.replace(/```(?:json)?\n?/g, '').replace(/```\n?/g, '').trim();
-    return JSON.parse(cleanText);
-  } catch (err) {
-    console.error('Gemini parsing error in pipeline:', err, text);
-    throw new Error('فشل في قراءة رد الذكاء الاصطناعي');
-  }
+// Pipeline-specific Gemini wrapper with lower temperature for deterministic analysis
+async function callGemini(prompt) {
+  return callGeminiBase(prompt, { temperature: 0.3, maxOutputTokens: 2048 });
 }
 
 // Phase 2: AI relevance check
@@ -170,7 +123,7 @@ export async function runFrontendPipeline(onProgress = () => {}) {
   if (!YOUTUBE_API_KEY) {
     throw new Error('مفتاح YouTube API مفقود (VITE_YOUTUBE_API_KEY).');
   }
-  if (!GEMINI_API_KEY) {
+  if (!isGeminiConfigured) {
     throw new Error('مفتاح Gemini API مفقود (VITE_GEMINI_API_KEY).');
   }
 

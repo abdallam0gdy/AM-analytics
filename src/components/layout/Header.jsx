@@ -1,13 +1,11 @@
-import { Sun, Moon, Bell, Search, Wifi, WifiOff } from 'lucide-react';
+import { Sun, Moon, Wifi, WifiOff } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useSupabaseStatus } from '../../hooks/useSupabase';
 import { isGeminiConfigured } from '../../lib/gemini';
-import { useState } from 'react';
 
 export default function Header({ onToggleSidebar }) {
   const { isDark, toggleTheme } = useTheme();
   const { isConfigured: supabaseOk } = useSupabaseStatus();
-  const [searchFocused, setSearchFocused] = useState(false);
 
   return (
     <header
@@ -35,27 +33,6 @@ export default function Header({ onToggleSidebar }) {
             }}
           />
         </div>
-
-        {/* Search */}
-        <div className={`relative hidden sm:flex items-center transition-all duration-300 ${searchFocused ? 'w-80' : 'w-64'}`}>
-          <Search size={16} className="absolute start-3 text-text-secondary-light/50 dark:text-text-secondary-dark/50 pointer-events-none" />
-          <input
-            id="global-search"
-            type="text"
-            placeholder="ابحث عن منافس أو فيديو..."
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            className="
-              w-full ps-9 pe-4 py-2 text-sm rounded-xl
-              bg-bg-light dark:bg-surface-dark-2
-              border border-border-light dark:border-border-dark
-              text-text-primary-light dark:text-text-primary-dark
-              placeholder:text-text-secondary-light/40 dark:placeholder:text-text-secondary-dark/40
-              focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50
-              transition-all duration-300
-            "
-          />
-        </div>
       </div>
 
       {/* Left side */}
@@ -72,16 +49,6 @@ export default function Header({ onToggleSidebar }) {
             {isGeminiConfigured ? '🤖 AI' : '🤖 بدون AI'}
           </span>
         </div>
-
-        {/* Notifications */}
-        <button
-          id="notifications-btn"
-          className="relative p-2 rounded-xl text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary-50 dark:hover:bg-surface-dark-hover transition-colors"
-          aria-label="الإشعارات"
-        >
-          <Bell size={19} />
-          <span className="absolute top-1.5 end-1.5 w-2 h-2 rounded-full bg-accent-container ring-2 ring-surface-light dark:ring-surface-dark" />
-        </button>
 
         {/* Theme Toggle */}
         <button
@@ -109,3 +76,4 @@ export default function Header({ onToggleSidebar }) {
     </header>
   );
 }
+

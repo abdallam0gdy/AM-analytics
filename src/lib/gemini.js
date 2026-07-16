@@ -4,7 +4,7 @@
  */
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const MODELS = [
+export const GEMINI_MODELS = [
   'gemini-3.5-flash',
   'gemini-3-flash',
   'gemini-3.1-flash-lite',
@@ -12,42 +12,74 @@ const MODELS = [
   'gemini-2.5-flash-lite'
 ];
 
-export const isGeminiConfigured = Boolean(GEMINI_API_KEY);
+export const isGeminiConfigured = Boolean(GEMINI_API_KEY) || import.meta.env.PROD;
 
 /**
  * Send a prompt to Gemini and get a response
+ * @param {string} prompt - The prompt to send
+ * @param {object} config - Optional generation config overrides { temperature, maxOutputTokens }
+ * @param {number} modelIndex - Internal: current model fallback index
+ * @param {number} retries - Internal: remaining retries
+ * @param {number} delayMs - Internal: delay between retries
  */
-async function callGemini(prompt, modelIndex = 0, retries = 3, delayMs = 3000) {
+export async function callGemini(prompt, config = {}, modelIndex = 0, retries = 3, delayMs = 3000) {
   if (!isGeminiConfigured) {
-    throw new Error('Gemini API Key غير مُعرَّف. أضفه في ملف .env');
+    throw new Error('Gemini AI غير مُهيأ حالياً. يُرجى تهيئة المفاتيح.');
   }
 
-  const modelName = MODELS[modelIndex];
-  const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
+  const temperature = config.temperature ?? 0.7;
+  const maxOutputTokens = config.maxOutputTokens ?? 4096;
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+  const modelName = GEMINI_MODELS[modelIndex];
+  let response;
+
+  try {
+    const payload = {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.7,
+        temperature,
         topP: 0.9,
-        maxOutputTokens: 4096,
+        maxOutputTokens,
         responseMimeType: 'application/json',
       },
-    }),
-  });
+    };
+
+    if (GEMINI_API_KEY) {
+      // Direct call (local development mode)
+      const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
+      response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      // Proxy call (production mode)
+      response = await fetch(`/api/gemini?model=${modelName}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    }
+  } catch (error) {
+
+    // Network error - retry if possible
+    if (retries > 0 && (error.message.includes('fetch') || error.message.includes('Network'))) {
+      console.warn(`[Gemini API] Network error. Retrying in ${delayMs}ms...`);
+      await new Promise(r => setTimeout(r, delayMs));
+      return callGemini(prompt, config, modelIndex, retries - 1, delayMs * 2);
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     if (response.status === 429 || response.status === 404) {
-      if (modelIndex < MODELS.length - 1) {
-        console.warn(`[Gemini API] Error ${response.status} for ${modelName}. Falling back to ${MODELS[modelIndex + 1]}...`);
-        return callGemini(prompt, modelIndex + 1, retries, delayMs);
+      if (modelIndex < GEMINI_MODELS.length - 1) {
+        console.warn(`[Gemini API] Error ${response.status} for ${modelName}. Falling back to ${GEMINI_MODELS[modelIndex + 1]}...`);
+        return callGemini(prompt, config, modelIndex + 1, retries, delayMs);
       } else if (retries > 0) {
         console.warn(`[Gemini API] Rate limit hit on all models. Retrying in ${delayMs}ms...`);
         await new Promise(r => setTimeout(r, delayMs));
-        return callGemini(prompt, 0, retries - 1, delayMs * 2);
+        return callGemini(prompt, config, 0, retries - 1, delayMs * 2);
       }
     }
     const errorData = await response.json().catch(() => ({}));

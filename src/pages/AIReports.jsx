@@ -6,7 +6,8 @@ import {
 import { analyzeVideo, generateContentIdeas, isGeminiConfigured } from '../lib/gemini';
 import { realCompetitors as localCompetitors } from '../data/mockData';
 import { useSupabaseData } from '../hooks/useSupabase';
-import { parseCompetitor } from './Competitors';
+import { parseCompetitor } from '../lib/utils';
+
 
 function ResultSection({ title, icon: Icon, items, color = 'primary' }) {
   if (!items || items.length === 0) return null;
